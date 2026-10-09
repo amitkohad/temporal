@@ -1,7 +1,7 @@
 # Feature catalogue: Source-built Temporal on Azure
 
 Branch: codex/001-azure-temporal-deployment
-Status: Phase 1 decisions in progress; later implementation and deployment pending
+Status: Phase 2 foundation implemented; Phase 1 execution gates remain; later phases and deployment pending
 Resource group: rg-nexusflow
 Source repository: https://github.com/amitkohad/temporal
 

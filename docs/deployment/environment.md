@@ -1,6 +1,6 @@
 # Azure staging environment
 
-Decision date: 2026-10-09. Status: selected staging inputs; execution remains unauthorized.
+Decision date: 2026-10-09. Status: selected staging inputs; user authorization now permits provisioning as needed. See the provisioning record for current resources.
 
 ## Branch policy
 Use codex/001-azure-temporal-deployment for all deployment implementation. Do not create another branch or merge into main. This policy applies to future phases and release workflow branch filters.

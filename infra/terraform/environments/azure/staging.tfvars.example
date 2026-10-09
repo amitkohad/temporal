@@ -1,0 +1,28 @@
+subscription_id     = "aa228172-c4ae-4c29-bd05-dcdcebb70ff4"
+tenant_id           = "48d2ccb2-9e24-49cc-921b-89962ed5f85f"
+location            = "centralindia"
+resource_group_mode = "existing"
+registry_sku        = "Basic"
+
+environment = {
+  name               = "stg"
+  classification     = "staging"
+  prefix             = "nexusflow"
+  source_commit      = "717f485c760d1068aa310906466468e51120254f"
+  kubernetes_version = null
+  postgres_version   = "17"
+  registry_private   = false
+  postgres_ha        = false
+  node_count         = 1
+  retention_days     = 3
+  network = {
+    vnet              = "10.42.0.0/16"
+    nodes             = "10.42.0.0/23"
+    postgres          = "10.42.2.0/27"
+    runner            = "10.42.3.0/27"
+    private_endpoints = "10.42.4.0/27"
+    services          = "10.43.0.0/16"
+    pods              = "10.44.0.0/16"
+    dns_ip            = "10.43.0.10"
+  }
+}

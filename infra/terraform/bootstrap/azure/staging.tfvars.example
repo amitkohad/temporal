@@ -1,0 +1,13 @@
+subscription_id     = "aa228172-c4ae-4c29-bd05-dcdcebb70ff4"
+tenant_id           = "48d2ccb2-9e24-49cc-921b-89962ed5f85f"
+location            = "centralindia"
+resource_group_mode = "existing"
+
+storage_account_name      = "stnexusflowtf7c5841"
+enable_github_federation   = false
+# Supply verified object IDs and existing network resource IDs before any real plan.
+state_operator_object_ids = []
+private_network = {
+  vnet_id   = ""
+  subnet_id = ""
+}

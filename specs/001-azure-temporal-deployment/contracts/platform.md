@@ -1,6 +1,6 @@
 # Platform and release contracts
 
-These are interface designs, not implemented modules or live endpoints.
+Phase 2 implements environment input validation, scope outputs and state bootstrap contracts. Runtime platform endpoints and release/schema operations below remain interface designs; no live endpoints exist.
 
 ## Environment input contract
 Required: environment name/classification, subscription/tenant/location, resource_group_name=rg-nexusflow, resource_group_mode=existing|create, naming prefix, approved source commit, nonoverlapping CIDRs, Kubernetes/PostgreSQL versions, sizing profile, runner access topology, TLS trust/client authorization, recovery and monitoring owners.

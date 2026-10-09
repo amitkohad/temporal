@@ -1,0 +1,5 @@
+resource_group_name  = "rg-nexusflow"
+storage_account_name = "stnexusflowtf7c5841"
+container_name       = "bootstrap"
+key                  = "nexusflow/stg/bootstrap.tfstate"
+use_azuread_auth     = true

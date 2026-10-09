@@ -48,3 +48,22 @@
 
 # Ignoring AI agent files
 .agents/
+
+# Terraform state, plans, caches and local deployment credentials.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.plan.json
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+*.tfbackend
+**/backend.local.tf
+.env
+.env.*
+!.env.example
+!*.tfvars.example
+!*.tfbackend.example
+.deployment-local/

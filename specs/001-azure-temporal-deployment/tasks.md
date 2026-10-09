@@ -2,7 +2,7 @@
 
 **Branch**: codex/001-azure-temporal-deployment
 **Input**: spec.md, plan.md, research.md, contracts/platform.md
-**Status**: Phase 1 decisions in progress: T001, T002, T004, T005 and T006 complete; T003, T007 and T008 partial. Later phases pending. No cloud execution authorized.
+**Status**: Phase 1 decisions in progress: T001, T002, T004, T005 and T006 complete; T003, T007 and T008 partial. Phase 2 (T009–T016) implemented; Phase 3 network foundation implemented and provisioned; remaining infrastructure pending. User has authorized provisioning as needed. See provisioning-record.md.
 
 Format: unchecked task ID, optional [P] for independently implementable work, [US#] story, action, path and completion evidence. Task completion requires the stated evidence. Phase owner roles are responsibilities, not assigned people. [P] does not authorize agent delegation.
 
@@ -23,22 +23,22 @@ Owner: Platform owner / maintainer. Dependencies: None. Evidence and open inputs
 
 ## Phase 2 — Contracts and state bootstrap implementation
 
-Owner: Infrastructure engineer. Dependencies: Phase 1 decisions.
+Owner: Infrastructure engineer. Dependencies: selected Phase 1 inputs; unresolved inputs remain execution gates. Evidence: [phase-2-implementation.md](phase-2-implementation.md).
 
-- [ ] T009 [US1] Implement variable schemas, validations and stable output contracts in infra/terraform/environments/azure/{variables,outputs}.tf; evidence: invalid-input tests.
-- [ ] T010 [US1] Define provider/version constraints and dependency lockfiles per root in infra/terraform/; evidence: approved provider matrix, repeatable initialization.
-- [ ] T011 [US1] Implement rg-nexusflow existing/create modes with no ownership of unrelated resources in infra/terraform/environments/azure/main.tf; evidence: mocked ownership plans.
-- [ ] T012 [US1] Implement state storage/container, encryption, versioning, soft delete, scoped access and locking prerequisites in infra/terraform/bootstrap/azure/; evidence: protected backend design and tests.
-- [ ] T013 [US1] Document secure initial local state handling, remote-state migration, separate root keys and interrupted-bootstrap recovery in docs/deployment/bootstrap.md; evidence: rehearsable sequence without circular dependency.
-- [ ] T014 [US1] Implement scoped OIDC federation and environment-bound trust configuration in infra/terraform/bootstrap/azure/; evidence: privilege matrix and untrusted-ref denial checks.
-- [ ] T015 [US1] Add ignore rules for state, plan, local credentials and variable secrets in .gitignore; evidence: git-ignore verification.
-- [ ] T016 [US1] Implement mocked Terraform contract tests for outputs and shared-resource protection in infra/terraform/tests/; evidence: offline passing tests.
+- [x] T009 [US1] Implement variable schemas, validations and stable output contracts in infra/terraform/environments/azure/{variables,outputs}.tf; evidence: invalid-input tests.
+- [x] T010 [US1] Define provider/version constraints and dependency lockfiles per root in infra/terraform/; evidence: approved provider matrix, repeatable initialization.
+- [x] T011 [US1] Implement rg-nexusflow existing/create modes with no ownership of unrelated resources in infra/terraform/environments/azure/main.tf; evidence: mocked ownership plans.
+- [x] T012 [US1] Implement state storage/container, encryption, versioning, soft delete, scoped access and locking prerequisites in infra/terraform/bootstrap/azure/; evidence: protected backend design and tests.
+- [x] T013 [US1] Document secure initial local state handling, remote-state migration, separate root keys and interrupted-bootstrap recovery in docs/deployment/bootstrap.md; evidence: rehearsable sequence without circular dependency.
+- [x] T014 [US1] Implement scoped OIDC federation and environment-bound trust configuration in infra/terraform/bootstrap/azure/; evidence: privilege matrix and untrusted-ref denial checks.
+- [x] T015 [US1] Add ignore rules for state, plan, local credentials and variable secrets in .gitignore; evidence: git-ignore verification.
+- [x] T016 [US1] Implement mocked Terraform contract tests for outputs and shared-resource protection in infra/terraform/tests/; evidence: offline passing tests.
 
 ## Phase 3 — Azure infrastructure implementation (US1)
 
-Owner: Infrastructure engineer. Dependencies: Phase 2 contracts; no apply in this phase.
+Owner: Infrastructure engineer. Dependencies: Phase 2 contracts. Provision completed prerequisites as needed under standing user authorization.
 
-- [ ] T017 [US1] Implement VNet, isolated AKS/runner/PostgreSQL/endpoint subnets and validated routing in infra/terraform/modules/azure/network/; evidence: CIDR and route tests.
+- [ ] T017 [US1] Implement VNet, isolated AKS/runner/PostgreSQL/endpoint subnets and validated routing in infra/terraform/foundation/azure/; evidence: private subnet test and live foundation plan. VNet/subnets are provisioned; explicit AKS/runner outbound routing remains pending.
 - [ ] T018 [US1] Implement delegated PostgreSQL subnet, private DNS links and required HA/storage egress in infra/terraform/modules/azure/network/; evidence: DNS/NSG configuration review.
 - [ ] T019 [US1] Implement controlled AKS/runner egress and dependency allowlist in infra/terraform/modules/azure/network/; evidence: endpoints and ports documented.
 - [ ] T020 [US1] Implement staging Basic ACR with authenticated public endpoint, disabled admin credentials and approved RBAC mode; preserve a private Premium option for production in infra/terraform/modules/azure/registry/; evidence: registry access tests.
@@ -128,8 +128,8 @@ Owner: Maintainer / platform owner. Dependencies: All applicable implementation/
 
 Owner: Authorized platform/database/build operators. Dependencies: Phase 8 authorization; NOT authorized by this request.
 
-- [ ] T077 [US1] EXECUTION ONLY: bootstrap state and OIDC prerequisites, protect/migrate initial state and verify locking using docs/deployment/bootstrap.md; evidence: protected backend and clean migration.
-- [ ] T078 [US1] EXECUTION ONLY: review and apply infrastructure plans for network, private registry, identities, runner, AKS, PostgreSQL and monitoring; evidence: outputs/ownership/plan audit without unexpected replacements.
+- [ ] T077 [US1] EXECUTION ONLY: bootstrap state and OIDC prerequisites, protect/migrate initial state and verify locking using docs/deployment/bootstrap.md; evidence: protected backend and clean migration. Private account, endpoint and DNS provisioned; local state ACLs and encrypted backups added. Private runner access, migration and lease verification remain pending.
+- [ ] T078 [US1] EXECUTION ONLY: review and apply infrastructure plans for network, private registry, identities, runner, AKS, PostgreSQL and monitoring; evidence: outputs/ownership/plan audit without unexpected replacements. Network foundation applied: 7 additions, no changes/deletions. Remaining platform resources are pending.
 - [ ] T079 [US1] EXECUTION ONLY: verify private runner/operator routes, DNS, registry access and state/Key Vault access; evidence: allowed and denied connection tests.
 - [ ] T080 [US2] EXECUTION ONLY: build/scan/sign or attest and publish approved source images to new ACR; evidence: release manifest and independently verified digests.
 - [ ] T081 [US3] EXECUTION ONLY: establish PostgreSQL roles, runtime/migration secrets and TLS material; evidence: least privilege and verified encrypted connections.

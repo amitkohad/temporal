@@ -2,7 +2,7 @@
 
 **Feature Branch**: codex/001-azure-temporal-deployment
 **Created**: 2026-10-09
-**Status**: Phase 1 decisions in progress; runtime implementation and deployment not started
+**Status**: Phase 2 Terraform foundation implemented; Phase 1 execution gates remain; Temporal runtime and deployment not started
 **Input**: Managed Kubernetes on Azure, PostgreSQL, no existing AKS or ACR, resource group rg-nexusflow, Terraform with portable boundaries, Temporal artifacts built from the provided repository; generate planning artifacts and do not deploy.
 
 ## User Scenarios & Testing

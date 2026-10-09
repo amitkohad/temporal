@@ -1,7 +1,7 @@
 # Implementation Plan: Source-built Temporal on Azure
 
 **Branch**: codex/001-azure-temporal-deployment | **Date**: 2026-10-09 | **Spec**: [spec.md](spec.md)
-**Status**: Phase 1 decision work started; later implementation and all deployment pending. See [phase-1-decisions.md](phase-1-decisions.md).
+**Status**: Phase 2 foundation implemented and validated; Phase 1 execution gates remain open; later phases and deployment pending. See [phase-2-implementation.md](phase-2-implementation.md).
 
 ## Summary
 Prepare a source-built Temporal service using new AKS and ACR resources and managed PostgreSQL in rg-nexusflow. Define Terraform Azure infrastructure adapters and a reusable Kubernetes layer. Execute no provisioning, publishing, migration or rollout during this planning request.
@@ -36,12 +36,12 @@ Approved staging exception: Basic ACR uses an authenticated public endpoint to m
 - .github/workflows/azure-temporal-validate.yml: PR-safe checks only.
 - .github/workflows/azure-temporal-release.yml: future manually gated build/publish/provision/migrate/rollout stages.
 - docs/deployment/: setup, source build, operations, recovery, upgrade and cost guidance.
-No executable files in these paths are introduced by this planning change.
+Phase 2 now implements Terraform contracts/bootstrap and local validation in these paths; other runtime resources and delivery workflows remain planned.
 
 ## Architecture and ownership
 Terraform bootstrap owns state storage/identity prerequisites. Azure infrastructure owns VNet/subnets/DNS/egress, ACR, AKS, PostgreSQL, Key Vault, monitoring and private runner infrastructure. Platform root owns namespace/policies/secrets integration and Helm release; schema operation is an explicit prerequisite, not a hidden Helm hook.
 AKS uses its managed node resource group for managed resources; parent remains rg-nexusflow. Existing resource-group mode references the group and never manages unrelated resources.
-Two PostgreSQL databases may initially share an HA server; separate sizing and roles remain explicit. Aggregate connection limits account for every datastore pool across all service replicas and rollout surge.
+Two PostgreSQL databases initially share a non-HA staging server; production HA remains configurable; separate sizing and roles remain explicit. Aggregate connection limits account for every datastore pool across all service replicas and rollout surge.
 Server/frontend/auth and internal service membership/TLS remain Temporal responsibilities; network privacy does not replace authorization.
 
 ## Delivery sequence (future authorized work)
