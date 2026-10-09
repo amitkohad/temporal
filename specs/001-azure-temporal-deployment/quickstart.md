@@ -10,8 +10,8 @@ Read features.md, spec.md, research.md, plan.md, contracts/platform.md, tasks.md
 - No cloud login is required for reviewing these documents.
 
 ## Before implementation
-Resolve the spec input register. Agree on the source-only boundary for OS/toolchain/platform agents. Select an approved immutable source release and compatible supported toolchain/provider/chart/database versions.
-Start with T001; all tasks are unchecked. Future infrastructure scripts are paths in the plan, not existing working commands.
+Resolve the spec input register. The user confirmed the source-only boundary for OS/toolchain/platform agents; follow docs/deployment/source-build.md. Select an approved immutable source release and compatible supported toolchain/provider/chart/database versions.
+Review phase-1-decisions.md: T001, T002, T004, T005 and T006 have decision evidence; resolve partial T003, T007 and T008 before declaring Phase 1 complete. Later tasks remain unchecked. Future infrastructure scripts are paths in the plan, not existing working commands.
 
 ## Future non-deploying checks
 After implementation, run Terraform formatting, backend-disabled initialization, validation/mocked tests and Helm rendering in a build-only environment. Follow docs/development/testing.md for any Go tests, always with test_dep. Run make lint-code-fast after code changes.

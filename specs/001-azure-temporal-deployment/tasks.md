@@ -2,7 +2,7 @@
 
 **Branch**: codex/001-azure-temporal-deployment
 **Input**: spec.md, plan.md, research.md, contracts/platform.md
-**Status**: All implementation tasks pending. No cloud execution authorized.
+**Status**: Phase 1 decisions in progress: T001, T002, T004, T005 and T006 complete; T003, T007 and T008 partial. Later phases pending. No cloud execution authorized.
 
 Format: unchecked task ID, optional [P] for independently implementable work, [US#] story, action, path and completion evidence. Task completion requires the stated evidence. Phase owner roles are responsibilities, not assigned people. [P] does not authorize agent delegation.
 
@@ -10,14 +10,14 @@ Planning artifacts were generated directly following the GitHub Spec Kit workflo
 
 ## Phase 1 — Inputs and release decisions
 
-Owner: Platform owner / maintainer. Dependencies: None.
+Owner: Platform owner / maintainer. Dependencies: None. Evidence and open inputs: [phase-1-decisions.md](phase-1-decisions.md).
 
-- [ ] T001 [US1] Resolve subscription, tenant, region, environment classification and rg-nexusflow existing/create ownership in specs/001-azure-temporal-deployment/research.md; evidence: accepted input register.
-- [ ] T002 [US1] Select naming, globally unique registry/storage names, CIDRs and environment/state isolation in docs/deployment/environment.md; evidence: collision and overlap review.
+- [x] T001 [US1] Resolve subscription, tenant, region, environment classification and rg-nexusflow existing/create ownership in specs/001-azure-temporal-deployment/research.md; evidence: accepted input register.
+- [x] T002 [US1] Select naming, globally unique registry/storage names, CIDRs and environment/state isolation in docs/deployment/environment.md; evidence: collision and overlap review.
 - [ ] T003 [US1] Verify regional AKS/PostgreSQL HA availability, VM/database quota, required Azure provider registrations and budget in docs/deployment/capacity.md; evidence: approved SKU/cost matrix.
-- [ ] T004 [US2] Select approved immutable source commit and validate available Go toolchain against go.mod in docs/deployment/source-build.md; evidence: release compatibility matrix.
-- [ ] T005 [US2] Confirm source-only boundary for base/toolchain images, managed services and platform agents in docs/deployment/source-build.md; evidence: explicit build policy.
-- [ ] T006 [US3] Record workload throughput/history/search demand, retention, latency and availability goals in docs/deployment/capacity.md; evidence: measurable acceptance targets.
+- [x] T004 [US2] Select approved immutable source commit and validate available Go toolchain against go.mod in docs/deployment/source-build.md; evidence: release compatibility matrix.
+- [x] T005 [US2] Confirm source-only boundary for base/toolchain images, managed services and platform agents in docs/deployment/source-build.md; evidence: explicit build policy.
+- [x] T006 [US3] Record workload throughput/history/search demand, retention, latency and availability goals in docs/deployment/capacity.md; evidence: measurable acceptance targets.
 - [ ] T007 [US4] Record RPO/RTO, backup retention, regional disaster-recovery decision and operational owners in docs/deployment/recovery.md; evidence: signed-off recovery profile.
 - [ ] T008 [US1] Choose operator and CI private connectivity, DNS authority and federated identity bootstrap owner in docs/deployment/access.md; evidence: access topology and permissions.
 
@@ -41,14 +41,14 @@ Owner: Infrastructure engineer. Dependencies: Phase 2 contracts; no apply in thi
 - [ ] T017 [US1] Implement VNet, isolated AKS/runner/PostgreSQL/endpoint subnets and validated routing in infra/terraform/modules/azure/network/; evidence: CIDR and route tests.
 - [ ] T018 [US1] Implement delegated PostgreSQL subnet, private DNS links and required HA/storage egress in infra/terraform/modules/azure/network/; evidence: DNS/NSG configuration review.
 - [ ] T019 [US1] Implement controlled AKS/runner egress and dependency allowlist in infra/terraform/modules/azure/network/; evidence: endpoints and ports documented.
-- [ ] T020 [US1] Implement private ACR with appropriate SKU, disabled admin credentials and approved RBAC/ABAC mode in infra/terraform/modules/azure/registry/; evidence: registry access tests.
+- [ ] T020 [US1] Implement staging Basic ACR with authenticated public endpoint, disabled admin credentials and approved RBAC mode; preserve a private Premium option for production in infra/terraform/modules/azure/registry/; evidence: registry access tests.
 - [ ] T021 [US1] Implement private AKS control plane, Entra integration and disabled local accounts where supported in infra/terraform/modules/azure/aks/; evidence: identity/DNS validation.
-- [ ] T022 [US1] Implement system/user node pools, supported zones, autoscale bounds and upgrade surge settings in infra/terraform/modules/azure/aks/; evidence: capacity and disruption review.
+- [ ] T022 [US1] Implement a staging shared system pool and separate production system/user pools, supported zones, autoscale bounds and upgrade surge settings in infra/terraform/modules/azure/aks/; evidence: capacity and disruption review.
 - [ ] T023 [US1] Implement OIDC/workload identity and kubelet registry reader assignments matched to registry mode in infra/terraform/modules/azure/aks/; evidence: scoped role matrix.
-- [ ] T024 [US1] Implement PostgreSQL Flexible Server with accepted version/SKU, HA, backup/PITR and storage settings in infra/terraform/modules/azure/postgresql/; evidence: protected configuration tests.
+- [ ] T024 [US1] Implement PostgreSQL Flexible Server with accepted version/SKU, staging HA disabled and production HA configurable, backup/PITR and storage settings in infra/terraform/modules/azure/postgresql/; evidence: protected configuration tests.
 - [ ] T025 [US1] Implement separate temporal/temporal_visibility databases and replacement/deletion safeguards in infra/terraform/modules/azure/postgresql/; evidence: nondestructive plans.
 - [ ] T026 [US1] Implement private Key Vault, rotation/access controls and logical secret/certificate handoff in infra/terraform/modules/azure/security/; evidence: no secret-value outputs.
-- [ ] T027 [US1] Implement monitoring/log destinations, retention, diagnostics and budgets in infra/terraform/modules/azure/observability/; evidence: destination/owner matrix.
+- [ ] T027 [US1] Implement minimal monitoring/log destinations, retention and diagnostics; no monetary spending cap by user instruction in infra/terraform/modules/azure/observability/; evidence: destination/owner matrix.
 - [ ] T028 [US1] Implement independently bootstrappable ephemeral private runner infrastructure and short-lived registration in infra/terraform/modules/azure/runner/; evidence: no dependence on Temporal readiness, no persisted runner token.
 - [ ] T029 [US1] Compose module dependencies and safe environment examples in infra/terraform/environments/azure/; evidence: validated complete configuration.
 - [ ] T030 [US1] Implement protected-state and identity handoff to separate platform root in infra/terraform/platform/; evidence: no same-plan Kubernetes bootstrap and no admin kubeconfig export.
@@ -94,7 +94,7 @@ Owner: Platform engineer / security owner. Dependencies: Contracts, source artif
 - [ ] T055 [US3] Implement approved claim-mapping/authorization configuration; if Go customization is required follow repository patterns in a scoped package; evidence: unauthorized requests denied and approved claims work.
 - [ ] T056 [US3] Implement namespace RBAC, network policies, Pod Security and hardened pod settings in deploy/temporal/policies/; evidence: allowed service/membership/metrics/DNS/DB traffic and denied unrelated access.
 - [ ] T057 [US3] Implement secret integration with Azure identity annotations isolated in deploy/temporal/azure.values.yaml; evidence: runtime pods cannot access migration credentials.
-- [ ] T058 [US3] Implement internal frontend exposure and trusted client/private DNS handoff in deploy/temporal/azure.values.yaml; evidence: no public service endpoint.
+- [ ] T058 [US3] Implement private ClusterIP frontend for staging and an optional internal load balancer, with trusted client/private DNS handoff in deploy/temporal/azure.values.yaml; evidence: no public service endpoint.
 - [ ] T059 [US3] Implement separate Helm/Kubernetes root referencing approved image digests and schema-readiness evidence in infra/terraform/platform/; evidence: infrastructure/schema gates before rollout.
 - [ ] T060 [US3] Implement approved namespace registration and retention/limit configuration as an explicit later operation in scripts/deployment/namespaces.sh; evidence: no implicit registration during validation.
 - [ ] T061 [US1] Implement portability checks preventing Azure resource IDs/annotations in shared values in scripts/deployment/validate-portability.sh; evidence: shared render works with neutral fixture endpoints.
@@ -111,7 +111,7 @@ Owner: Operations / security / build engineers. Dependencies: Phases 3–6 imple
 - [ ] T067 [US1] Implement static Terraform fmt/validate/mocked tests and Helm schema/policy validation in .github/workflows/azure-temporal-validate.yml; evidence: credential-free non-mutating checks.
 - [ ] T068 [US1] Implement separate manual bootstrap/provision/publish/migrate/rollout stages with protected environments in .github/workflows/azure-temporal-release.yml; evidence: no automatic apply, trusted identity and review gates.
 - [ ] T069 [US1] Implement state-lock contention, sanitized plan storage, concurrency and failed-stage resume controls in delivery workflows; evidence: safe concurrent-run/retry fixtures.
-- [ ] T070 [US1] Document cost estimates, tags, budgets and cleanup ownership in docs/deployment/costs.md; evidence: monthly cost assumptions and safe staging cleanup.
+- [ ] T070 [US1] Document cost estimates, tags, free-benefit eligibility, attended stop/start and cleanup ownership; no spending cap in docs/deployment/costs.md; evidence: monthly cost assumptions and safe staging cleanup.
 - [ ] T071 [US4] Implement source-built temporary smoke worker and representative load/failure harness under deployment test paths; evidence: no external prebuilt application-worker image.
 
 ## Phase 8 — Pre-execution review gate

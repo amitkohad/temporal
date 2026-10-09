@@ -2,7 +2,7 @@
 
 Date: 2026-10-09
 Inspected local source commit: 4b74f358be4f58bc1d1841548b25d23a1210761e
-This is an inspection baseline, not an approved production release.
+This was the initial inspection baseline, not an approved production release. Phase 1 selects branch baseline 717f485c760d1068aa310906466468e51120254f; see phase-1-decisions.md.
 
 ## Repository evidence
 - AGENTS.md and .github/copilot-instructions.md reviewed.
@@ -21,7 +21,7 @@ This is an inspection baseline, not an approved production release.
 1. Use AKS and PostgreSQL Flexible Server. Create ACR because none exists. Use rg-nexusflow as the parent resource group with explicit existing/create mode; allow Azure-managed node resource group.
 2. Terraform is a portable orchestration language, not a provider-independent resource API. Implement Azure adapters with azurerm (and azuread only where necessary); define stable inputs/outputs. Shared Kubernetes configuration uses kubernetes/helm interfaces and a cloud-neutral values contract. Other cloud adapters are future work.
 3. Separate bootstrap, infrastructure, and application roots/state. Avoid configuring a Kubernetes provider against a cluster created in the same initial plan.
-4. Plan private AKS, private ACR (SKU supporting Private Link), private Key Vault/storage, and PostgreSQL delegated-subnet VNet integration. Do not mix PostgreSQL delegated-subnet mode with Private Link casually; reassess supported provider/service options at implementation.
+4. Plan private AKS, private Key Vault/storage, and PostgreSQL delegated-subnet VNet integration. Phase 1 user approval selects authenticated public Basic ACR for staging cost; private Premium ACR remains a production option. Do not mix PostgreSQL delegated-subnet mode with Private Link casually; reassess supported provider/service options at implementation.
 5. Provide an ephemeral VNet-connected delivery runner independent of Temporal readiness. Bootstrap via authorized management-plane provisioning; then use private data-plane DNS/routes. No public endpoint fallback.
 6. Build a minimal SQL-tools image with temporal-sql-tool and matching schema directories. Exclude CLI, Cassandra, and Elasticsearch tools from initial Azure scope. Source-built test-worker code can use repository SDK dependencies; Web UI requires separate source.
 7. Use PostgreSQL for both stores initially. Validate advanced visibility queries and load. A postgres12 plugin name denotes a compatibility implementation, not a requirement to deploy obsolete PostgreSQL 12.
@@ -46,4 +46,8 @@ This is an inspection baseline, not an approved production release.
 - [Terraform Azure backend](https://developer.hashicorp.com/terraform/language/backend/azurerm): locking, Entra authentication and federation.
 - [Terraform sensitive data](https://developer.hashicorp.com/terraform/language/manage-sensitive-data)
 
-Version pins, SKUs and availability must be rechecked at implementation; no Azure account inventory or resource inspection was performed.
+Initial planning did not inspect Azure resources. Phase 1 subsequently performed read-only inventory, quota, registration, SKU and retail-rate checks; see phase-1-decisions.md and docs/deployment/capacity.md. Recheck live capacity and supported exact versions before execution.
+
+## Phase 1 evidence
+
+See [phase-1-decisions.md](phase-1-decisions.md) for selected inputs, user decisions, completed tasks and unresolved gates. All future work remains on codex/001-azure-temporal-deployment, with no new branch or merge into main.

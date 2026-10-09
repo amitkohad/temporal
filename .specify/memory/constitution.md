@@ -12,3 +12,5 @@ This constitution governs deployment features and supplements AGENTS.md and .git
 6. Separate build, provisioning, schema migration, and application rollout. Default validation is non-deploying. No cloud mutation or deployment is authorized by these planning artifacts.
 7. Verify meaningful behavior. Static checks cover Terraform, rendered Kubernetes resources, workflows, and source provenance; later staging checks cover durable execution, visibility, failover, upgrades, and recovery. Follow docs/development/testing.md and use test_dep for Go tests.
 8. Prefer existing repository patterns and minimal changes. Document deviations and operational tradeoffs; choose capacity from measured workloads rather than arbitrary replica counts.
+
+9. Use codex/001-azure-temporal-deployment for all implementation; never create another branch or merge this work into main. Minimize staging cost, use eligible free benefits, and impose no spending cap. The approved staging registry exception is authenticated public Basic ACR; Temporal and PostgreSQL stay private.

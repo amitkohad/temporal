@@ -2,7 +2,7 @@
 
 **Feature Branch**: codex/001-azure-temporal-deployment
 **Created**: 2026-10-09
-**Status**: Draft — implementation not started
+**Status**: Phase 1 decisions in progress; runtime implementation and deployment not started
 **Input**: Managed Kubernetes on Azure, PostgreSQL, no existing AKS or ACR, resource group rg-nexusflow, Terraform with portable boundaries, Temporal artifacts built from the provided repository; generate planning artifacts and do not deploy.
 
 ## User Scenarios & Testing
@@ -111,6 +111,10 @@ Acceptance:
 - SC-006: Repeated infrastructure/schema operations are safe and do not delete shared or durable data.
 
 ## Inputs to resolve before execution
-Subscription/tenant, Azure region, rg-nexusflow existence/ownership, environment classification, naming prefix, quotas, approved source commit/release, AKS/PostgreSQL versions and SKUs, CIDRs, runner/operator connectivity, DNS/certificate authority, client identities, expected workflow throughput/history size/search demand, availability target, RPO/RTO, budget and on-call owner.
+Resolved selections and verified account metadata are recorded in [phase-1-decisions.md](phase-1-decisions.md). Remaining gates include PostgreSQL subscription quota, live capacity, supported exact version pins, bootstrap privileges, certificate/client identities, named recovery owner, recovery-target acceptance and later runtime measurements. No spending cap is requested.
 
-Planning assumptions: approved toolchain/base OS images are allowed while Temporal application code is source-built; managed Azure services and platform agents are not built from this repository. Confirm this boundary before image implementation if "everything" also means toolchain/OS images. PostgreSQL-only visibility remains the initial requirement; measure search scalability before production.
+Confirmed boundary: the user permits standard toolchain/base OS images, managed Azure services and platform agents while Temporal application binaries are source-built. PostgreSQL-only visibility remains the initial requirement; measure search scalability before production.
+
+## Staging cost decisions
+
+The user selected a low-cost staging pilot with no spending cap, Basic ACR with authenticated public access, AKS Free, one shared node pool, and no PostgreSQL HA. Private Temporal/PostgreSQL access remains required. Production requirements are retained as conditional production-profile requirements. All implementation stays on codex/001-azure-temporal-deployment; never create another branch or merge into main.

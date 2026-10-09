@@ -1,7 +1,7 @@
 # Implementation Plan: Source-built Temporal on Azure
 
 **Branch**: codex/001-azure-temporal-deployment | **Date**: 2026-10-09 | **Spec**: [spec.md](spec.md)
-**Status**: Planning only. All implementation/deployment work remains pending.
+**Status**: Phase 1 decision work started; later implementation and all deployment pending. See [phase-1-decisions.md](phase-1-decisions.md).
 
 ## Summary
 Prepare a source-built Temporal service using new AKS and ACR resources and managed PostgreSQL in rg-nexusflow. Define Terraform Azure infrastructure adapters and a reusable Kubernetes layer. Execute no provisioning, publishing, migration or rollout during this planning request.
@@ -11,7 +11,7 @@ Language: Terraform HCL, Helm YAML, shell/PowerShell automation; Go for source c
 Source: inspected commit 4b74f358be4f58bc1d1841548b25d23a1210761e; select approved release before execution.
 Toolchain: Go version from selected go.mod (currently 1.27.0), version-pinned Terraform/providers/Helm/chart/Kubernetes/PostgreSQL after compatibility research.
 Storage: PostgreSQL persistence and visibility; Azure Blob remote Terraform state; Key Vault secret/certificate references.
-Target: private AKS, Linux amd64 initially; system/user pools, zones and capacity based on accepted production profile.
+Target: private AKS, Linux amd64 initially; staging uses one shared pool and a non-HA database, while production requires separate pools and accepted availability settings.
 Performance: throughput, history size, latency, connection budget and search load are unresolved sizing inputs.
 Testing: static HCL/render/workflow checks first; source builds and future isolated staging integration/failure/recovery checks later.
 Scope: Temporal server and SQL tools; excludes production application workers, UI, second-cloud adapter and automatic regional replication.
@@ -23,7 +23,7 @@ Scope: Temporal server and SQL tools; excludes production application workers, U
 - Security: private data paths and scoped identity contracts; authentication/authorization require implementation proof.
 - Verification: every requirement maps to tasks; sizing claims await measurement.
 - Execution boundary: only branch and Markdown artifacts created now.
-No constitutional exceptions proposed.
+Approved staging exception: Basic ACR uses an authenticated public endpoint to minimize cost. Temporal/PostgreSQL remain private. Single-node/no-HA settings apply only to staging. No spending cap is requested.
 
 ## Project Structure (planned implementation)
 - infra/terraform/bootstrap/azure/: state storage, federation/bootstrap prerequisites; its own protected initial state.
@@ -71,3 +71,7 @@ Staging-only: use test_dep,integration for repository integration tests; execute
 - Azure outages/capacity: assess zone support/quota and explicitly choose regional DR policy.
 - Secret exposure: scoped state access and artifact retention, no plaintext examples or logging.
 - Future provider portability costs: only Azure adapter implemented initially; contract tests enforce the boundary.
+
+## Phase 1 selected profile
+
+Use existing rg-nexusflow in Central India, staging, AKS Free with one D2s_v5 node, Basic ACR, PostgreSQL B1ms without HA, private frontend/database and an ephemeral private runner. Approved toolchain/base images are allowed; Temporal binaries remain source-built. See the five docs/deployment decision documents for costs, names, CIDRs, source pin and open ownership/quota gates. Never create another branch or merge into main.

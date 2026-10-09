@@ -13,8 +13,8 @@
 - [x] All functional requirements map to tasks.
 - [x] Repository-specific evidence and external source links are recorded.
 - [ ] Resolve environment inputs and compatibility pins before implementation/execution dependencies.
-- [ ] Confirm toolchain/base-image/managed-service source-only boundary.
-- [ ] Accept sizing, availability, budget, recovery and operational ownership.
+- [x] Confirm toolchain/base-image/managed-service source-only boundary (user selected standard infrastructure dependencies).
+- [ ] Accept measured sizing and named recovery/operational ownership; low-cost staging and no spending cap are selected.
 - [ ] Complete implementation and static/staging validation in later work.
 - [ ] Authorize deployment separately.
 
