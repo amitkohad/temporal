@@ -2,7 +2,7 @@
 
 **Feature Branch**: codex/001-azure-temporal-deployment
 **Created**: 2026-10-09
-**Status**: Phase 2 Terraform foundation implemented; Phase 1 execution gates remain; Temporal runtime and deployment not started
+**Status**: Phase 5 implemented and tested locally with executor/identity/lint gates open; server and Web UI runtime hosting pending
 **Input**: Managed Kubernetes on Azure, PostgreSQL, no existing AKS or ACR, resource group rg-nexusflow, Terraform with portable boundaries, Temporal artifacts built from the provided repository; generate planning artifacts and do not deploy.
 
 ## User Scenarios & Testing
@@ -73,7 +73,7 @@ Acceptance:
 - FR-004: Define private networking, DNS, nonoverlapping CIDRs, controlled egress, and operator/CI access.
 - FR-005: Bootstrap protected remote Terraform state with locking and an explicit local-to-remote migration procedure.
 - FR-006: Isolate Azure resource implementations from provider-neutral platform contracts and shared Kubernetes/Temporal configuration.
-- FR-007: Compile Temporal server and SQL tools from a single approved commit of amitkohad/temporal.
+- FR-007: Compile Temporal server, SQL tools and Entra helper from a single approved commit of amitkohad/temporal; compile Web UI from an independently pinned approved commit of amitkohad/temporal-ui.
 - FR-008: Do not use prebuilt Temporal runtime images or download Temporal application binaries; omit the external CLI from the SQL-tools image.
 - FR-009: Record source revision, compatible toolchain, schemas, provenance, SBOM, scan results, and immutable image digests.
 - FR-010: Restrict image publishing to trusted release identities and separate it from build-only checks.
@@ -81,7 +81,7 @@ Acceptance:
 - FR-012: Configure separate persistence and advanced-visibility databases using supported PostgreSQL/version/plugin combinations.
 - FR-013: Use serialized, explicit schema Jobs; initialization and upgrades must never drop existing databases.
 - FR-014: Separate schema-owner and runtime roles, validate required runtime DML privileges, protect credentials, and verify certificate identity for database TLS.
-- FR-015: Deploy frontend, history, matching, and internal worker separately; keep application worker/UI outside initial runtime scope.
+- FR-015: Deploy frontend, history, matching and internal worker separately, and include a private source-built Temporal Web UI; production application workers remain outside scope.
 - FR-016: Keep frontend private on its configured gRPC endpoint; restrict service and membership traffic.
 - FR-017: Provide service/client TLS, internode TLS, authentication, authorization, and certificate rotation.
 - FR-018: Define production replica/topology/disruption budgets, probes, graceful drain, resource requests/limits, and capacity reserves.
@@ -94,6 +94,9 @@ Acceptance:
 - FR-025: Require explicit later authorization for cloud execution; documentation generation is not deployment authorization.
 - FR-026: Supply environment inputs, dry validation instructions, costs, task dependencies, ownership roles, and completion evidence.
 
+- FR-027: Build and host Temporal Web UI from the approved user fork with private access, browser OIDC/HTTPS and verified authorized frontend connections; prohibit install scripts that download Temporal CLI.
+- FR-028: Keep PostgreSQL Entra-only; source-build a renewable token helper and use separate runtime/migration identities with verified TLS for both stores, without password fallback.
+
 ### Key Entities
 - Environment: subscription, tenant, location, resource-group mode, network ranges, capacity profile, retention and recovery objectives.
 - Platform contract: cluster reference, registry endpoint, PostgreSQL endpoint, identity/secret references, private connectivity and observability endpoints.
@@ -103,8 +106,8 @@ Acceptance:
 - Readiness report: load results, fault drills, security checks, restore evidence, unresolved risks.
 
 ## Success Criteria
-- SC-001: All 26 requirements map to stories and implementation tasks; every future execution task is clearly marked.
-- SC-002: Build evidence proves that both Temporal runtime images originate from one approved commit.
+- SC-001: All 28 requirements map to stories and implementation tasks; every future execution task is clearly marked.
+- SC-002: Build evidence proves server/tools/helper originate from one approved server commit, and UI originates from its separately approved fork commit; every runtime/executor digest is qualified.
 - SC-003: Static checks pass without cloud mutation; a portability check detects Azure identifiers in shared configuration.
 - SC-004: Staging durability and visibility scenarios pass after restarts and supported failover.
 - SC-005: Restore and upgrade drills satisfy agreed recovery and service objectives.

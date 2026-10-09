@@ -74,13 +74,21 @@ Owner: Build engineer / maintainer. Dependencies: Approved source policy; indepe
 
 Owner: Database engineer / maintainer. Dependencies: Release contract and database TLS/identity design.
 
-- [ ] T041 [US3] Implement runtime versus migration-role bootstrap design and required SQL grants in deploy/temporal/schemas/roles.sql; evidence: DML succeeds and runtime DDL is denied.
-- [ ] T042 [US3] Implement SQL connection TLS/CA/hostname verification and secret-reference mapping in deploy/temporal/schemas/; evidence: invalid CA or hostname rejected.
-- [ ] T043 [US3] Implement initialize/upgrade/verify operation wrapper using repository SQL tools in scripts/deployment/schema.sh; evidence: empty, existing, newer and mismatched-schema paths.
-- [ ] T044 [US3] Implement exclusive migration lease and bounded failure/retry behavior in scripts/deployment/schema.sh; evidence: concurrent migration denial and partial-failure handling.
-- [ ] T045 [US3] Implement explicit schema Kubernetes Jobs with least-privilege credentials, deadlines and sanitized logs in deploy/temporal/schemas/jobs.yaml; evidence: no drop or automatic startup migration.
-- [ ] T046 [US3] Test initialization rerun and upgrade against isolated PostgreSQL in deployment schema tests; evidence: workflow data preserved and both versions verified.
-- [ ] T047 [US3] Document backup prerequisite, migration ordering, ownership, failure assessment and compatibility rollback in docs/deployment/schema.md; evidence: operator-reviewed runbook.
+- [x] T041 [US3] Implement runtime versus migration-role bootstrap design and required SQL grants in deploy/temporal/schemas/roles.sql; evidence: DML succeeds and runtime DDL is denied.
+- [x] T042 [US3] Implement SQL connection TLS/CA/hostname verification and secret-reference mapping in deploy/temporal/schemas/; evidence: invalid CA or hostname rejected.
+- [x] T043 [US3] Implement initialize/upgrade/verify operation wrapper using repository SQL tools in scripts/deployment/schema.sh; evidence: empty, existing, newer and mismatched-schema paths.
+- [x] T044 [US3] Implement exclusive migration lease and bounded failure/retry behavior in scripts/deployment/schema.sh; evidence: concurrent migration denial and partial-failure handling.
+- [ ] T045 [US3] Implement explicit schema Kubernetes Jobs with least-privilege credentials, deadlines and sanitized logs in deploy/temporal/schemas/jobs.yaml; evidence: no drop or automatic startup migration. Partial: six Entra-only suspended templates and executor packaging implemented; qualified image integration remains T095.
+- [x] T046 [US3] Test initialization rerun and upgrade against isolated PostgreSQL in deployment schema tests; evidence: workflow data preserved and both versions verified.
+- [ ] T047 [US3] Document backup prerequisite, migration ordering, ownership, failure assessment and compatibility rollback in docs/deployment/schema.md; evidence: operator-reviewed runbook. Runbook written; named operator/restore acceptance pending review.
+
+### Added identity and executor tasks
+
+- [ ] T094 [US3] Implement and test source-built cmd/tools/entra-token using fixed Entra endpoint/scope, fresh projected assertion, bounded requests, expiry checks and redacted errors; evidence: unit tests, test_dep refresh-hook regression tests and lint. Helper and tests/vet pass; pinned lint compatibility remains T104.
+- [ ] T095 [US2] Extend source builds, release contracts and scans to qualify the Entra helper and schema-runner executor from the same new server-fork commit; package helper in server image and guarded tooling in executor image; evidence: artifact hashes, nonroot execution, SBOM/scan and accepted published manifest. Previous 717f baseline lacks the new helper and cannot be the final Entra release.
+- [ ] T096 [US3] Provision four workload identities/federations and map PostgreSQL Entra object IDs to separate store/operation roles; verify renewal after token/assertion rotation and concurrent new connections on Azure; evidence: no password fallback, no cross-store or migration access for runtime. Infrastructure changes remain reviewed Terraform in rg-nexusflow.
+
+- [ ] T104 [US2] Resolve repository-pinned golangci-lint export-data incompatibility with approved Go 1.27 toolchain, then rerun make lint-code-fast and scoped helper lint without unrelated autofixes; evidence: successful required lint and unchanged unrelated Go code.
 
 ## Phase 6 — Portable Kubernetes and security implementation (US3)
 
@@ -100,6 +108,16 @@ Owner: Platform engineer / security owner. Dependencies: Contracts, source artif
 - [ ] T059 [US3] Implement separate Helm/Kubernetes root referencing approved image digests and schema-readiness evidence in infra/terraform/platform/; evidence: infrastructure/schema gates before rollout.
 - [ ] T060 [US3] Implement approved namespace registration and retention/limit configuration as an explicit later operation in scripts/deployment/namespaces.sh; evidence: no implicit registration during validation.
 - [ ] T061 [US1] Implement portability checks preventing Azure resource IDs/annotations in shared values in scripts/deployment/validate-portability.sh; evidence: shared render works with neutral fixture endpoints.
+
+### Added Web UI tasks
+
+- [x] T097 [US2] Verify user-owned official UI fork and record immutable candidate source revision. Fork amitkohad/temporal-ui parent temporalio/ui and source HEAD 7a54e4ae74e699766464fe67250e27b4d0344253 verified by GitHub API; final compatibility remains T098.
+- [ ] T098 [US2] Select compatible pinned UI/server releases and audit Node/pnpm/Go toolchains, lockfiles, licenses and build lifecycle; disable CLI-downloading prepare scripts and document necessary audited toolchain install steps.
+- [ ] T099 [US2] Implement UI source checkout/build with locked dependencies, direct source-built server entrypoint and pinned standard bases; extend release manifest validation, SBOM/scans and workflows for its independent source commit.
+- [ ] T100 [US3] Implement portable private UI Deployment/ClusterIP, hardened pods, probes, resource limits and frontend network policy; add Azure identity/secret adapter only in cloud overrides; render against qualified digest.
+- [ ] T101 [US3] Resolve browser hostname, HTTPS certificate, Entra OIDC registration/callback, session secrets and authorized claims; implement verified frontend mTLS/token forwarding and namespace authorization; deny anonymous access and unauthorized namespace writes.
+- [ ] T102 [US4] Document low-cost private browser access, certificate/session rotation, UI upgrade compatibility and troubleshooting; avoid new paid ingress resources unless necessary.
+- [ ] T103 [US3] EXECUTION ONLY: source-build/scan/publish qualified UI release, deploy privately after frontend gates, and test authorized workflow/search views, denied users/namespaces and restart behavior; evidence: private HTTPS/OIDC and frontend TLS handshake.
 
 ## Phase 7 — Observability, operations and delivery controls
 
@@ -178,7 +196,7 @@ MVP staging sequence: US1 foundation -> US2 source artifacts -> US3 safe schema 
 | FR-012 | T024–T025, T043, T048, T050, T082 |
 | FR-013 | T043–T046, T082 |
 | FR-014 | T026, T041–T042, T045, T057, T081, T085 |
-| FR-015 | T049, T059, T083 |
+| FR-015 | T049, T059, T083, T097-T103 |
 | FR-016 | T056, T058, T079, T085 |
 | FR-017 | T054–T055, T064, T085 |
 | FR-018 | T022, T052–T053, T087 |
@@ -190,6 +208,8 @@ MVP staging sequence: US1 foundation -> US2 source artifacts -> US3 safe schema 
 | FR-024 | T036, T067–T069, T072 |
 | FR-025 | T068, T075–T076; T077–T092 gated |
 | FR-026 | T001–T008, T029–T031, T040, T047, T064–T070, T075 |
+| FR-027 | T097-T103 |
+| FR-028 | T041-T042, T094-T096 |
 
 Traceability is reviewed against final generated task numbering during document verification. Future task edits must update this table.
 

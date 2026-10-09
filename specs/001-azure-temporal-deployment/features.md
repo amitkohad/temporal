@@ -1,7 +1,7 @@
 # Feature catalogue: Source-built Temporal on Azure
 
 Branch: codex/001-azure-temporal-deployment
-Status: Phase 2 foundation implemented; Phase 1 execution gates remain; later phases and deployment pending
+Status: Infrastructure and source-build phases implemented; Phase 5 validated locally with execution/lint gates outstanding; runtime and UI hosting pending
 Resource group: rg-nexusflow
 Source repository: https://github.com/amitkohad/temporal
 
@@ -15,4 +15,11 @@ Source repository: https://github.com/amitkohad/temporal
 | F06 Operational readiness | Monitor, load-test, restore, and maintain the service | US4 | FR-020–FR-023 |
 | F07 Controlled delivery | Separate validation from future cloud execution | US1–US4 | FR-024–FR-026 |
 
-Initial scope is Temporal Server, internal worker service, SQL schema tools, and required infrastructure. Application workers and Web UI are follow-up features; the server repository does not supply their complete application source.
+Hosting scope includes Temporal Server, its internal worker, SQL schema tools, renewable Entra credential helper, migration executor, and Temporal Web UI. UI source comes from the user-approved fork https://github.com/amitkohad/temporal-ui; deployment implementation stays on codex/001-azure-temporal-deployment. Production application workers remain outside scope.
+
+Additional hosting features:
+
+| Feature | Outcome | Story | Requirements |
+|---|---|---|---|
+| F08 Private source-built Web UI | Browser access to approved namespaces through private HTTPS/OIDC | US3 | FR-015, FR-027 |
+| F09 Renewable database identity | Entra token renewal per connection without stored passwords | US3 | FR-014, FR-028 |

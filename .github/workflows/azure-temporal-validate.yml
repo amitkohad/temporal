@@ -3,10 +3,10 @@ name: Azure Temporal source validation
 on:
   push:
     branches: [codex/001-azure-temporal-deployment]
-    paths: ["**.go", "go.mod", "go.sum", "Makefile", "schema/**", "docker/targets/deployment-server.Dockerfile", "docker/targets/sql-tools.Dockerfile", "scripts/deployment/**", ".github/workflows/azure-temporal-*.yml"]
+    paths: ["**.go", "go.mod", "go.sum", "Makefile", "schema/**", "deploy/temporal/schemas/**", "docker/targets/*Dockerfile", "scripts/deployment/**", ".github/workflows/azure-temporal-*.yml"]
   pull_request:
     branches: [codex/001-azure-temporal-deployment]
-    paths: ["**.go", "go.mod", "go.sum", "Makefile", "schema/**", "docker/targets/deployment-server.Dockerfile", "docker/targets/sql-tools.Dockerfile", "scripts/deployment/**", ".github/workflows/azure-temporal-*.yml"]
+    paths: ["**.go", "go.mod", "go.sum", "Makefile", "schema/**", "deploy/temporal/schemas/**", "docker/targets/*Dockerfile", "scripts/deployment/**", ".github/workflows/azure-temporal-*.yml"]
 
 permissions:
   contents: read
@@ -56,6 +56,13 @@ jobs:
           set -euo pipefail
           python3 -m unittest discover -s scripts/deployment/tests -p 'test_*.py'
           for script in scripts/deployment/*.sh; do bash -n "$script"; done
+          for script in scripts/deployment/tests/schema-*.sh; do bash -n "$script"; done
+      - name: Check Entra helper and refreshable PostgreSQL credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          go test -tags test_dep ./cmd/tools/entra-token ./common/persistence/sql/sqlplugin ./common/config
+          go vet -tags test_dep ./cmd/tools/entra-token
       - name: Build source and local images
         shell: bash
         run: |

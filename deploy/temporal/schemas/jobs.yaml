@@ -1,0 +1,1168 @@
+# Explicit suspended templates; qualify the executor image, release bundle and credentials before rendering.
+# The frozen distroless SQL-tools image cannot run the Bash/Python/psql guarded executor.
+# Render one database/operation at a time; never apply or resume this entire file automatically.
+# JSON-form YAML allows the policy tests to inspect full object structure with the Python standard library.
+# Entra-only: distinct migration service accounts with explicit audience-bound projected assertions; no password Secrets.
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "temporal-schema-persistence-initialize",
+    "namespace": "nexusflow-staging",
+    "labels": {
+      "app.kubernetes.io/name": "temporal",
+      "app.kubernetes.io/component": "schema-migration",
+      "nexusflow.io/schema-operation": "initialize"
+    }
+  },
+  "spec": {
+    "suspend": true,
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 1200,
+    "ttlSecondsAfterFinished": 86400,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "temporal",
+          "app.kubernetes.io/component": "schema-migration"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "temporal-persistence-schema-migration",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "runAsGroup": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "schema",
+            "image": "SOURCE_BUILT_MIGRATION_EXECUTOR_DIGEST_REQUIRED",
+            "imagePullPolicy": "IfNotPresent",
+            "command": [
+              "/usr/local/bin/schema.sh"
+            ],
+            "args": [
+              "initialize",
+              "/etc/temporal/release/release.json"
+            ],
+            "env": [
+              {
+                "name": "SCHEMA_HOST",
+                "value": "POSTGRES_PRIVATE_HOSTNAME_REQUIRED"
+              },
+              {
+                "name": "SCHEMA_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "SCHEMA_DATABASE",
+                "value": "temporal"
+              },
+              {
+                "name": "SCHEMA_USER",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "postgresql-principal-name",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "SCHEMA_CA_FILE",
+                "value": "/etc/temporal/postgresql/ca.crt"
+              },
+              {
+                "name": "SCHEMA_TIMEOUT_SECONDS",
+                "value": "900"
+              },
+              {
+                "name": "AZURE_TENANT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "tenant-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "client-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_FEDERATED_TOKEN_FILE",
+                "value": "/var/run/secrets/azure/tokens/azure-identity-token"
+              },
+              {
+                "name": "SCHEMA_TOKEN_HELPER",
+                "value": "/usr/local/bin/entra-token"
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "name": "postgresql-ca",
+                "mountPath": "/etc/temporal/postgresql",
+                "readOnly": true
+              },
+              {
+                "name": "scratch",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "azure-workload-identity",
+                "mountPath": "/var/run/secrets/azure/tokens",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "postgresql-ca",
+            "configMap": {
+              "name": "temporal-postgresql-ca",
+              "optional": false,
+              "defaultMode": 292,
+              "items": [
+                {
+                  "key": "ca.crt",
+                  "path": "ca.crt"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scratch",
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "azure-workload-identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "api://AzureADTokenExchange",
+                    "expirationSeconds": 3600,
+                    "path": "azure-identity-token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+---
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "temporal-schema-persistence-upgrade",
+    "namespace": "nexusflow-staging",
+    "labels": {
+      "app.kubernetes.io/name": "temporal",
+      "app.kubernetes.io/component": "schema-migration",
+      "nexusflow.io/schema-operation": "upgrade"
+    }
+  },
+  "spec": {
+    "suspend": true,
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 1200,
+    "ttlSecondsAfterFinished": 86400,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "temporal",
+          "app.kubernetes.io/component": "schema-migration"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "temporal-persistence-schema-migration",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "runAsGroup": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "schema",
+            "image": "SOURCE_BUILT_MIGRATION_EXECUTOR_DIGEST_REQUIRED",
+            "imagePullPolicy": "IfNotPresent",
+            "command": [
+              "/usr/local/bin/schema.sh"
+            ],
+            "args": [
+              "upgrade",
+              "/etc/temporal/release/release.json"
+            ],
+            "env": [
+              {
+                "name": "SCHEMA_HOST",
+                "value": "POSTGRES_PRIVATE_HOSTNAME_REQUIRED"
+              },
+              {
+                "name": "SCHEMA_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "SCHEMA_DATABASE",
+                "value": "temporal"
+              },
+              {
+                "name": "SCHEMA_USER",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "postgresql-principal-name",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "SCHEMA_CA_FILE",
+                "value": "/etc/temporal/postgresql/ca.crt"
+              },
+              {
+                "name": "SCHEMA_TIMEOUT_SECONDS",
+                "value": "900"
+              },
+              {
+                "name": "AZURE_TENANT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "tenant-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "client-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_FEDERATED_TOKEN_FILE",
+                "value": "/var/run/secrets/azure/tokens/azure-identity-token"
+              },
+              {
+                "name": "SCHEMA_TOKEN_HELPER",
+                "value": "/usr/local/bin/entra-token"
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "name": "postgresql-ca",
+                "mountPath": "/etc/temporal/postgresql",
+                "readOnly": true
+              },
+              {
+                "name": "scratch",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "azure-workload-identity",
+                "mountPath": "/var/run/secrets/azure/tokens",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "postgresql-ca",
+            "configMap": {
+              "name": "temporal-postgresql-ca",
+              "optional": false,
+              "defaultMode": 292,
+              "items": [
+                {
+                  "key": "ca.crt",
+                  "path": "ca.crt"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scratch",
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "azure-workload-identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "api://AzureADTokenExchange",
+                    "expirationSeconds": 3600,
+                    "path": "azure-identity-token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+---
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "temporal-schema-persistence-verify",
+    "namespace": "nexusflow-staging",
+    "labels": {
+      "app.kubernetes.io/name": "temporal",
+      "app.kubernetes.io/component": "schema-migration",
+      "nexusflow.io/schema-operation": "verify"
+    }
+  },
+  "spec": {
+    "suspend": true,
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 1200,
+    "ttlSecondsAfterFinished": 86400,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "temporal",
+          "app.kubernetes.io/component": "schema-migration"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "temporal-persistence-schema-migration",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "runAsGroup": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "schema",
+            "image": "SOURCE_BUILT_MIGRATION_EXECUTOR_DIGEST_REQUIRED",
+            "imagePullPolicy": "IfNotPresent",
+            "command": [
+              "/usr/local/bin/schema.sh"
+            ],
+            "args": [
+              "verify",
+              "/etc/temporal/release/release.json"
+            ],
+            "env": [
+              {
+                "name": "SCHEMA_HOST",
+                "value": "POSTGRES_PRIVATE_HOSTNAME_REQUIRED"
+              },
+              {
+                "name": "SCHEMA_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "SCHEMA_DATABASE",
+                "value": "temporal"
+              },
+              {
+                "name": "SCHEMA_USER",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "postgresql-principal-name",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "SCHEMA_CA_FILE",
+                "value": "/etc/temporal/postgresql/ca.crt"
+              },
+              {
+                "name": "SCHEMA_TIMEOUT_SECONDS",
+                "value": "900"
+              },
+              {
+                "name": "AZURE_TENANT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "tenant-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-persistence-migration-identity",
+                    "key": "client-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_FEDERATED_TOKEN_FILE",
+                "value": "/var/run/secrets/azure/tokens/azure-identity-token"
+              },
+              {
+                "name": "SCHEMA_TOKEN_HELPER",
+                "value": "/usr/local/bin/entra-token"
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "name": "postgresql-ca",
+                "mountPath": "/etc/temporal/postgresql",
+                "readOnly": true
+              },
+              {
+                "name": "scratch",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "azure-workload-identity",
+                "mountPath": "/var/run/secrets/azure/tokens",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "postgresql-ca",
+            "configMap": {
+              "name": "temporal-postgresql-ca",
+              "optional": false,
+              "defaultMode": 292,
+              "items": [
+                {
+                  "key": "ca.crt",
+                  "path": "ca.crt"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scratch",
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "azure-workload-identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "api://AzureADTokenExchange",
+                    "expirationSeconds": 3600,
+                    "path": "azure-identity-token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+---
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "temporal-schema-visibility-initialize",
+    "namespace": "nexusflow-staging",
+    "labels": {
+      "app.kubernetes.io/name": "temporal",
+      "app.kubernetes.io/component": "schema-migration",
+      "nexusflow.io/schema-operation": "initialize"
+    }
+  },
+  "spec": {
+    "suspend": true,
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 1200,
+    "ttlSecondsAfterFinished": 86400,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "temporal",
+          "app.kubernetes.io/component": "schema-migration"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "temporal-visibility-schema-migration",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "runAsGroup": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "schema",
+            "image": "SOURCE_BUILT_MIGRATION_EXECUTOR_DIGEST_REQUIRED",
+            "imagePullPolicy": "IfNotPresent",
+            "command": [
+              "/usr/local/bin/schema.sh"
+            ],
+            "args": [
+              "initialize",
+              "/etc/temporal/release/release.json"
+            ],
+            "env": [
+              {
+                "name": "SCHEMA_HOST",
+                "value": "POSTGRES_PRIVATE_HOSTNAME_REQUIRED"
+              },
+              {
+                "name": "SCHEMA_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "SCHEMA_DATABASE",
+                "value": "temporal_visibility"
+              },
+              {
+                "name": "SCHEMA_USER",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "postgresql-principal-name",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "SCHEMA_CA_FILE",
+                "value": "/etc/temporal/postgresql/ca.crt"
+              },
+              {
+                "name": "SCHEMA_TIMEOUT_SECONDS",
+                "value": "900"
+              },
+              {
+                "name": "AZURE_TENANT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "tenant-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "client-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_FEDERATED_TOKEN_FILE",
+                "value": "/var/run/secrets/azure/tokens/azure-identity-token"
+              },
+              {
+                "name": "SCHEMA_TOKEN_HELPER",
+                "value": "/usr/local/bin/entra-token"
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "name": "postgresql-ca",
+                "mountPath": "/etc/temporal/postgresql",
+                "readOnly": true
+              },
+              {
+                "name": "scratch",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "azure-workload-identity",
+                "mountPath": "/var/run/secrets/azure/tokens",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "postgresql-ca",
+            "configMap": {
+              "name": "temporal-postgresql-ca",
+              "optional": false,
+              "defaultMode": 292,
+              "items": [
+                {
+                  "key": "ca.crt",
+                  "path": "ca.crt"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scratch",
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "azure-workload-identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "api://AzureADTokenExchange",
+                    "expirationSeconds": 3600,
+                    "path": "azure-identity-token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+---
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "temporal-schema-visibility-upgrade",
+    "namespace": "nexusflow-staging",
+    "labels": {
+      "app.kubernetes.io/name": "temporal",
+      "app.kubernetes.io/component": "schema-migration",
+      "nexusflow.io/schema-operation": "upgrade"
+    }
+  },
+  "spec": {
+    "suspend": true,
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 1200,
+    "ttlSecondsAfterFinished": 86400,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "temporal",
+          "app.kubernetes.io/component": "schema-migration"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "temporal-visibility-schema-migration",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "runAsGroup": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "schema",
+            "image": "SOURCE_BUILT_MIGRATION_EXECUTOR_DIGEST_REQUIRED",
+            "imagePullPolicy": "IfNotPresent",
+            "command": [
+              "/usr/local/bin/schema.sh"
+            ],
+            "args": [
+              "upgrade",
+              "/etc/temporal/release/release.json"
+            ],
+            "env": [
+              {
+                "name": "SCHEMA_HOST",
+                "value": "POSTGRES_PRIVATE_HOSTNAME_REQUIRED"
+              },
+              {
+                "name": "SCHEMA_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "SCHEMA_DATABASE",
+                "value": "temporal_visibility"
+              },
+              {
+                "name": "SCHEMA_USER",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "postgresql-principal-name",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "SCHEMA_CA_FILE",
+                "value": "/etc/temporal/postgresql/ca.crt"
+              },
+              {
+                "name": "SCHEMA_TIMEOUT_SECONDS",
+                "value": "900"
+              },
+              {
+                "name": "AZURE_TENANT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "tenant-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "client-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_FEDERATED_TOKEN_FILE",
+                "value": "/var/run/secrets/azure/tokens/azure-identity-token"
+              },
+              {
+                "name": "SCHEMA_TOKEN_HELPER",
+                "value": "/usr/local/bin/entra-token"
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "name": "postgresql-ca",
+                "mountPath": "/etc/temporal/postgresql",
+                "readOnly": true
+              },
+              {
+                "name": "scratch",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "azure-workload-identity",
+                "mountPath": "/var/run/secrets/azure/tokens",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "postgresql-ca",
+            "configMap": {
+              "name": "temporal-postgresql-ca",
+              "optional": false,
+              "defaultMode": 292,
+              "items": [
+                {
+                  "key": "ca.crt",
+                  "path": "ca.crt"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scratch",
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "azure-workload-identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "api://AzureADTokenExchange",
+                    "expirationSeconds": 3600,
+                    "path": "azure-identity-token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+---
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "temporal-schema-visibility-verify",
+    "namespace": "nexusflow-staging",
+    "labels": {
+      "app.kubernetes.io/name": "temporal",
+      "app.kubernetes.io/component": "schema-migration",
+      "nexusflow.io/schema-operation": "verify"
+    }
+  },
+  "spec": {
+    "suspend": true,
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 1200,
+    "ttlSecondsAfterFinished": 86400,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "temporal",
+          "app.kubernetes.io/component": "schema-migration"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "temporal-visibility-schema-migration",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 30,
+        "securityContext": {
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "runAsGroup": 1000,
+          "fsGroup": 1000,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "schema",
+            "image": "SOURCE_BUILT_MIGRATION_EXECUTOR_DIGEST_REQUIRED",
+            "imagePullPolicy": "IfNotPresent",
+            "command": [
+              "/usr/local/bin/schema.sh"
+            ],
+            "args": [
+              "verify",
+              "/etc/temporal/release/release.json"
+            ],
+            "env": [
+              {
+                "name": "SCHEMA_HOST",
+                "value": "POSTGRES_PRIVATE_HOSTNAME_REQUIRED"
+              },
+              {
+                "name": "SCHEMA_PORT",
+                "value": "5432"
+              },
+              {
+                "name": "SCHEMA_DATABASE",
+                "value": "temporal_visibility"
+              },
+              {
+                "name": "SCHEMA_USER",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "postgresql-principal-name",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "SCHEMA_CA_FILE",
+                "value": "/etc/temporal/postgresql/ca.crt"
+              },
+              {
+                "name": "SCHEMA_TIMEOUT_SECONDS",
+                "value": "900"
+              },
+              {
+                "name": "AZURE_TENANT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "tenant-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_CLIENT_ID",
+                "valueFrom": {
+                  "configMapKeyRef": {
+                    "name": "temporal-visibility-migration-identity",
+                    "key": "client-id",
+                    "optional": false
+                  }
+                }
+              },
+              {
+                "name": "AZURE_FEDERATED_TOKEN_FILE",
+                "value": "/var/run/secrets/azure/tokens/azure-identity-token"
+              },
+              {
+                "name": "SCHEMA_TOKEN_HELPER",
+                "value": "/usr/local/bin/entra-token"
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "name": "postgresql-ca",
+                "mountPath": "/etc/temporal/postgresql",
+                "readOnly": true
+              },
+              {
+                "name": "scratch",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "azure-workload-identity",
+                "mountPath": "/var/run/secrets/azure/tokens",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "postgresql-ca",
+            "configMap": {
+              "name": "temporal-postgresql-ca",
+              "optional": false,
+              "defaultMode": 292,
+              "items": [
+                {
+                  "key": "ca.crt",
+                  "path": "ca.crt"
+                }
+              ]
+            }
+          },
+          {
+            "name": "scratch",
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "azure-workload-identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "audience": "api://AzureADTokenExchange",
+                    "expirationSeconds": 3600,
+                    "path": "azure-identity-token"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -3,5 +3,7 @@
 
 # Deployment scripts execute inside Linux containers.
 scripts/deployment/*.sh text eol=lf
+scripts/deployment/tests/*.sh text eol=lf
 docker/targets/deployment-server.Dockerfile text eol=lf
 docker/targets/sql-tools.Dockerfile text eol=lf
+docker/targets/schema-runner.Dockerfile text eol=lf

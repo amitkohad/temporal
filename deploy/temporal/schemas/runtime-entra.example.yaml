@@ -1,0 +1,48 @@
+# References only: provide verified private DNS, Entra identities, and CA material before use.
+# Each store uses a different managed identity/login and workload-token projection.
+persistence:
+  datastores:
+    default:
+      sql:
+        pluginName: postgres12_pgx
+        databaseName: temporal
+        connectAddr: VERIFIED_POSTGRES_FQDN:5432
+        connectProtocol: tcp
+        user: nexusflow_temporal_runtime_login
+        passwordCommand:
+          command: /usr/local/bin/entra-token
+          args: ["--client-id", "REQUIRED_TEMPORAL_RUNTIME_CLIENT_UUID"]
+          timeout: 15s
+        connectAttributes:
+          options: "-c role=temporal_runtime"
+        maxConns: 5
+        maxIdleConns: 2
+        maxConnLifetime: 5m
+        tls:
+          enabled: true
+          enableHostVerification: true
+          caFile: /etc/temporal/postgresql/ca.crt
+    visibility:
+      sql:
+        pluginName: postgres12_pgx
+        databaseName: temporal_visibility
+        connectAddr: VERIFIED_POSTGRES_FQDN:5432
+        connectProtocol: tcp
+        user: nexusflow_temporal_visibility_runtime_login
+        passwordCommand:
+          command: /usr/local/bin/entra-token
+          args: ["--client-id", "REQUIRED_VISIBILITY_RUNTIME_CLIENT_UUID"]
+          timeout: 15s
+        connectAttributes:
+          options: "-c role=temporal_visibility_runtime"
+        maxConns: 5
+        maxIdleConns: 2
+        maxConnLifetime: 5m
+        tls:
+          enabled: true
+          enableHostVerification: true
+          caFile: /etc/temporal/postgresql/ca.crt
+# Supply distinct verified runtime client UUIDs and database login mappings. Both
+# runtime identities federate to this runtime ServiceAccount subject; migration
+# identities federate only to their separate migration ServiceAccount subjects.
+# Tenant and projected assertion path use AZURE_TENANT_ID/AZURE_FEDERATED_TOKEN_FILE.

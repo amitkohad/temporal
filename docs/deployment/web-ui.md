@@ -1,0 +1,11 @@
+# Temporal Web UI hosting scope
+
+The user added Web UI to hosting scope and forked the official source into [amitkohad/temporal-ui](https://github.com/amitkohad/temporal-ui). GitHub API verification on 2026-10-09 confirmed parent `temporalio/ui`, default branch `main` and candidate HEAD `7a54e4ae74e699766464fe67250e27b4d0344253`. This is an inspected candidate, not an approved or published release. All deployment implementation remains on `codex/001-azure-temporal-deployment` in the server repository.
+
+The UI monorepo includes frontend assets and its Go HTTP server under `server/`; build both from the fork's pinned commit. Do not consume a prebuilt Temporal UI image or the automatically maintained ui-server mirror. The inspected source requires Node >=22.14, pnpm 10.10.0 and server Go 1.26.5; exact compatible toolchain/release pins still require qualification.
+
+The upstream pnpm `prepare` lifecycle downloads Temporal CLI. Build with a frozen lockfile and disabled install scripts, then run only the audited asset-generation/toolchain steps needed by production. Do not invoke its development server/CLI download path, unpinned Docker helper downloads or dependency-tidying Makefile targets. Record both source provenance and the dependency/license/SBOM/scan evidence of the final UI image. Extend the deployment release manifest to carry separate UI source commit and immutable digest alongside the server release.
+
+Phase 6 will implement a private ClusterIP UI with hardened pods and modest staging resources on the existing node pool. Private operator/browser connectivity is required. Browser OIDC, trusted HTTPS, session handling and callback hostname must be resolved before exposing it. Frontend gRPC connections require verified TLS and the approved namespace authorization design. UI controls that disable write buttons do not authorize API requests. Test unauthorized users and namespaces as well as authorized workflow/search views.
+
+Avoid adding paid ingress infrastructure until the private access path needs it; neither a public anonymous UI nor a TLS verification bypass is a cost optimization. Tasks T098-T103 cover compatible releases, source build, private Kubernetes configuration, identity/certificates, runbooks and eventual rollout tests. No UI build, image publication or deployment has occurred in Phase 5.

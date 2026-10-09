@@ -1,20 +1,20 @@
 # Implementation Plan: Source-built Temporal on Azure
 
 **Branch**: codex/001-azure-temporal-deployment | **Date**: 2026-10-09 | **Spec**: [spec.md](spec.md)
-**Status**: Phases 2–4 implemented; staging infrastructure provisioned and stopped, source binaries/images built locally. Release qualification is held by unclassified scanner findings; schemas and Temporal rollout remain later phases. Phase 1 production/recovery/trust gates remain open. See [phase-4-implementation.md](phase-4-implementation.md).
+**Status**: Phase 5 schema and renewable Entra implementation underway; Web UI added to Phase 6. Staging infrastructure remains stopped; release qualification is held by scanner findings. See [phase-5-implementation.md](phase-5-implementation.md).
 
 ## Summary
 Prepare a source-built Temporal service using new AKS and ACR resources and managed PostgreSQL in rg-nexusflow. Define Terraform Azure infrastructure adapters and a reusable Kubernetes layer. The original planning request excluded execution. Later standing user authorization permits prerequisite provisioning as needed; reviewed staging infrastructure is now provisioned. Application build/publication, database schema and Temporal rollout follow subsequent phase tasks.
 
 ## Technical Context
 Language: Terraform HCL, Helm YAML, shell/PowerShell automation; Go for source compilation and meaningful test utilities.
-Source: approved immutable commit 717f485c760d1068aa310906466468e51120254f from the fork; verify provenance during Phase 4 builds.
+Source: Phase 4 baseline 717f485c760d1068aa310906466468e51120254f from the server fork. Final Entra release requires a reviewed commit containing the new helper. UI candidate 7a54e4ae74e699766464fe67250e27b4d0344253 from amitkohad/temporal-ui is inspected but not yet release-qualified.
 Toolchain: Go version from selected go.mod (currently 1.27.0), version-pinned Terraform/providers/Helm/chart/Kubernetes/PostgreSQL after compatibility research.
 Storage: PostgreSQL persistence and visibility; Azure Blob remote Terraform state; Key Vault secret/certificate references.
 Target: private AKS, Linux amd64 initially; staging uses one shared pool and a non-HA database, while production requires separate pools and accepted availability settings.
 Performance: throughput, history size, latency, connection budget and search load are unresolved sizing inputs.
 Testing: static HCL/render/workflow checks first; source builds and future isolated staging integration/failure/recovery checks later.
-Scope: Temporal server and SQL tools; excludes production application workers, UI, second-cloud adapter and automatic regional replication.
+Scope: Temporal server, SQL tools, renewable Entra token helper, guarded migration executor and private Temporal Web UI. UI source is built from amitkohad/temporal-ui. Production application workers, a second-cloud adapter and automatic regional replication remain outside scope.
 
 ## Constitution Check
 - Source-only Temporal artifacts: satisfied by planned SQL-tools replacement; existing CLI download path prohibited.
@@ -41,7 +41,7 @@ Phase 2 now implements Terraform contracts/bootstrap and local validation in the
 ## Architecture and ownership
 Terraform bootstrap owns state storage/identity prerequisites. Azure infrastructure owns VNet/subnets/DNS/egress, ACR, AKS, PostgreSQL, Key Vault, monitoring and private runner infrastructure. Platform root owns namespace/policies/secrets integration and Helm release; schema operation is an explicit prerequisite, not a hidden Helm hook.
 AKS uses its managed node resource group for managed resources; parent remains rg-nexusflow. Existing resource-group mode references the group and never manages unrelated resources.
-Two PostgreSQL databases initially share a non-HA staging server; production HA remains configurable; separate sizing and roles remain explicit. Aggregate connection limits account for every datastore pool across all service replicas and rollout surge.
+PostgreSQL remains Entra-only. Source-built passwordCommand helpers renew tokens per physical connection and select distinct runtime identities per store. Four runtime/migration identities are isolated through NOLOGIN SQL roles. Two PostgreSQL databases initially share a non-HA staging server; production HA remains configurable; separate sizing and roles remain explicit. Aggregate connection limits account for every datastore pool across all service replicas and rollout surge.
 Server/frontend/auth and internal service membership/TLS remain Temporal responsibilities; network privacy does not replace authorization.
 
 ## Delivery sequence (future authorized work)

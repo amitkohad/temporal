@@ -34,4 +34,4 @@ Runtime role has required DML permissions, not schema ownership. Migration crede
 
 ## Kubernetes contract
 Four separately configured services; shared image digest with role selection verified against the selected server; pod-address advertisement; service/membership network policy; graceful drain; TLS-aware probes; resources, topology, disruption budgets, autoscale bounds, namespace/retention limits. Cloud load-balancer and workload-identity annotations live only in azure.values.yaml.
-No Web UI or production application worker image is supplied by the server source. Monitoring agents, base images and managed services require an explicit source-only scope decision.
+Web UI is source-built from the user-owned amitkohad/temporal-ui fork with independent full commit, locked toolchain, SBOM, scan and digest evidence. Deployment stays in the server deployment branch. UI connects privately to frontend using verified TLS and namespace authorization. Browser access requires approved OIDC and HTTPS; UI write controls do not replace API authorization. Production application workers remain outside scope. Standard toolchain/OS bases and managed services are approved.
