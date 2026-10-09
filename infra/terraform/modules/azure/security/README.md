@@ -1,0 +1,4 @@
+# Private secret store
+Creates a Standard Key Vault with private endpoint and private DNS, RBAC, seven-day soft delete, purge protection, and destruction protection. Public access and trusted-service bypass are disabled. Inputs accept existing VNet/private endpoint subnet references and optional scoped secret reader/operator object IDs. The output contains only vault references. Secret values must be generated and written through the private data plane outside Terraform, never placed in tfvars or Terraform outputs. Private DNS zone ownership belongs to this module; reuse an existing zone through a future explicit interface rather than creating a duplicate owner.
+
+Validate with `terraform init -backend=false`, `terraform validate`, and `terraform test`.

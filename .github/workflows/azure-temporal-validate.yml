@@ -1,0 +1,73 @@
+name: Azure Temporal source validation
+
+on:
+  push:
+    branches: [codex/001-azure-temporal-deployment]
+    paths: ["**.go", "go.mod", "go.sum", "Makefile", "schema/**", "docker/targets/deployment-server.Dockerfile", "docker/targets/sql-tools.Dockerfile", "scripts/deployment/**", ".github/workflows/azure-temporal-*.yml"]
+  pull_request:
+    branches: [codex/001-azure-temporal-deployment]
+    paths: ["**.go", "go.mod", "go.sum", "Makefile", "schema/**", "docker/targets/deployment-server.Dockerfile", "docker/targets/sql-tools.Dockerfile", "scripts/deployment/**", ".github/workflows/azure-temporal-*.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporal-source-validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-build:
+    if: github.repository == 'amitkohad/temporal'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SOURCE_COMMIT: ${{ github.sha }}
+      RUNTIME_BASE: gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+    steps:
+      - name: Checkout exact candidate and deployment driver
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: amitkohad/temporal
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch exact candidate from the approved fork
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_REPOSITORY_ID" == 1411347811 ]]
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            [[ "$GITHUB_BASE_REF" == codex/001-azure-temporal-deployment ]]
+            [[ "$GITHUB_REF" =~ ^refs/pull/[0-9]+/merge$ ]]
+          else
+            [[ "$GITHUB_REF" == refs/heads/codex/001-azure-temporal-deployment ]]
+          fi
+          git fetch --no-tags origin "$GITHUB_REF"
+          git cat-file -e "$SOURCE_COMMIT^{commit}"
+      - name: Install exact Go toolchain
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: 1.27.2
+          cache: false
+      - name: Check deployment policy fixtures and shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts/deployment/tests -p 'test_*.py'
+          for script in scripts/deployment/*.sh; do bash -n "$script"; done
+      - name: Build source and local images
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/deployment/build-source.sh "$SOURCE_COMMIT" "$RUNNER_TEMP/candidate/build"
+          bash scripts/deployment/build-images.sh "$RUNNER_TEMP/candidate/build" "$RUNTIME_BASE" "nexusflow/temporal-server:$SOURCE_COMMIT" "nexusflow/temporal-sql-tools:$SOURCE_COMMIT"
+      - name: Preserve build metadata
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: source-build-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/candidate/build/build-metadata.json
+            ${{ runner.temp }}/candidate/build/image-metadata.json
+          if-no-files-found: error
+          retention-days: 1

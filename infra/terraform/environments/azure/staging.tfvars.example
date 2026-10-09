@@ -9,7 +9,7 @@ environment = {
   classification     = "staging"
   prefix             = "nexusflow"
   source_commit      = "717f485c760d1068aa310906466468e51120254f"
-  kubernetes_version = null
+  kubernetes_version = "1.35.8"
   postgres_version   = "17"
   registry_private   = false
   postgres_ha        = false
@@ -26,3 +26,7 @@ environment = {
     dns_ip            = "10.43.0.10"
   }
 }
+
+# Resolve platform names, subnet references and operator from the provisioning record before enabling.
+provision_platform = false
+platform = null

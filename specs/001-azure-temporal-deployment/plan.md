@@ -1,14 +1,14 @@
 # Implementation Plan: Source-built Temporal on Azure
 
 **Branch**: codex/001-azure-temporal-deployment | **Date**: 2026-10-09 | **Spec**: [spec.md](spec.md)
-**Status**: Phase 2 foundation implemented and validated; Phase 1 execution gates remain open; later phases and deployment pending. See [phase-2-implementation.md](phase-2-implementation.md).
+**Status**: Phases 2–4 implemented; staging infrastructure provisioned and stopped, source binaries/images built locally. Release qualification is held by unclassified scanner findings; schemas and Temporal rollout remain later phases. Phase 1 production/recovery/trust gates remain open. See [phase-4-implementation.md](phase-4-implementation.md).
 
 ## Summary
-Prepare a source-built Temporal service using new AKS and ACR resources and managed PostgreSQL in rg-nexusflow. Define Terraform Azure infrastructure adapters and a reusable Kubernetes layer. Execute no provisioning, publishing, migration or rollout during this planning request.
+Prepare a source-built Temporal service using new AKS and ACR resources and managed PostgreSQL in rg-nexusflow. Define Terraform Azure infrastructure adapters and a reusable Kubernetes layer. The original planning request excluded execution. Later standing user authorization permits prerequisite provisioning as needed; reviewed staging infrastructure is now provisioned. Application build/publication, database schema and Temporal rollout follow subsequent phase tasks.
 
 ## Technical Context
 Language: Terraform HCL, Helm YAML, shell/PowerShell automation; Go for source compilation and meaningful test utilities.
-Source: inspected commit 4b74f358be4f58bc1d1841548b25d23a1210761e; select approved release before execution.
+Source: approved immutable commit 717f485c760d1068aa310906466468e51120254f from the fork; verify provenance during Phase 4 builds.
 Toolchain: Go version from selected go.mod (currently 1.27.0), version-pinned Terraform/providers/Helm/chart/Kubernetes/PostgreSQL after compatibility research.
 Storage: PostgreSQL persistence and visibility; Azure Blob remote Terraform state; Key Vault secret/certificate references.
 Target: private AKS, Linux amd64 initially; staging uses one shared pool and a non-HA database, while production requires separate pools and accepted availability settings.

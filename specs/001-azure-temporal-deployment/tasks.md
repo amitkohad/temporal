@@ -2,7 +2,7 @@
 
 **Branch**: codex/001-azure-temporal-deployment
 **Input**: spec.md, plan.md, research.md, contracts/platform.md
-**Status**: Phase 1 decisions in progress: T001, T002, T004, T005 and T006 complete; T003, T007 and T008 partial. Phase 2 (T009–T016) implemented; Phase 3 network foundation implemented and provisioned; remaining infrastructure pending. User has authorized provisioning as needed. See provisioning-record.md.
+**Status**: Phase 1 decisions in progress: T001, T002, T004, T005 and T006 complete; T003, T007 and T008 partial. Phases 2–4 implementation (T009–T040) complete; Phase 4 source/image execution passed but release qualification is held by unclassified scan findings (T093). Live acceptance and later execution remain separately tracked. User has authorized provisioning as needed. See provisioning-record.md.
 
 Format: unchecked task ID, optional [P] for independently implementable work, [US#] story, action, path and completion evidence. Task completion requires the stated evidence. Phase owner roles are responsibilities, not assigned people. [P] does not authorize agent delegation.
 
@@ -36,37 +36,39 @@ Owner: Infrastructure engineer. Dependencies: selected Phase 1 inputs; unresolve
 
 ## Phase 3 — Azure infrastructure implementation (US1)
 
-Owner: Infrastructure engineer. Dependencies: Phase 2 contracts. Provision completed prerequisites as needed under standing user authorization.
+Owner: Infrastructure engineer. Dependencies: Phase 2 contracts. Provision completed prerequisites as needed under standing user authorization. Implementation evidence: [phase-3-implementation.md](phase-3-implementation.md); live execution acceptance remains T077–T079.
 
-- [ ] T017 [US1] Implement VNet, isolated AKS/runner/PostgreSQL/endpoint subnets and validated routing in infra/terraform/foundation/azure/; evidence: private subnet test and live foundation plan. VNet/subnets are provisioned; explicit AKS/runner outbound routing remains pending.
-- [ ] T018 [US1] Implement delegated PostgreSQL subnet, private DNS links and required HA/storage egress in infra/terraform/modules/azure/network/; evidence: DNS/NSG configuration review.
-- [ ] T019 [US1] Implement controlled AKS/runner egress and dependency allowlist in infra/terraform/modules/azure/network/; evidence: endpoints and ports documented.
-- [ ] T020 [US1] Implement staging Basic ACR with authenticated public endpoint, disabled admin credentials and approved RBAC mode; preserve a private Premium option for production in infra/terraform/modules/azure/registry/; evidence: registry access tests.
-- [ ] T021 [US1] Implement private AKS control plane, Entra integration and disabled local accounts where supported in infra/terraform/modules/azure/aks/; evidence: identity/DNS validation.
-- [ ] T022 [US1] Implement a staging shared system pool and separate production system/user pools, supported zones, autoscale bounds and upgrade surge settings in infra/terraform/modules/azure/aks/; evidence: capacity and disruption review.
-- [ ] T023 [US1] Implement OIDC/workload identity and kubelet registry reader assignments matched to registry mode in infra/terraform/modules/azure/aks/; evidence: scoped role matrix.
-- [ ] T024 [US1] Implement PostgreSQL Flexible Server with accepted version/SKU, staging HA disabled and production HA configurable, backup/PITR and storage settings in infra/terraform/modules/azure/postgresql/; evidence: protected configuration tests.
-- [ ] T025 [US1] Implement separate temporal/temporal_visibility databases and replacement/deletion safeguards in infra/terraform/modules/azure/postgresql/; evidence: nondestructive plans.
-- [ ] T026 [US1] Implement private Key Vault, rotation/access controls and logical secret/certificate handoff in infra/terraform/modules/azure/security/; evidence: no secret-value outputs.
-- [ ] T027 [US1] Implement minimal monitoring/log destinations, retention and diagnostics; no monetary spending cap by user instruction in infra/terraform/modules/azure/observability/; evidence: destination/owner matrix.
-- [ ] T028 [US1] Implement independently bootstrappable ephemeral private runner infrastructure and short-lived registration in infra/terraform/modules/azure/runner/; evidence: no dependence on Temporal readiness, no persisted runner token.
-- [ ] T029 [US1] Compose module dependencies and safe environment examples in infra/terraform/environments/azure/; evidence: validated complete configuration.
-- [ ] T030 [US1] Implement protected-state and identity handoff to separate platform root in infra/terraform/platform/; evidence: no same-plan Kubernetes bootstrap and no admin kubeconfig export.
-- [ ] T031 [US1] Write resource ownership/import/teardown documentation including AKS-managed node resource group in docs/deployment/infrastructure.md; evidence: shared rg-nexusflow cannot be destroyed accidentally.
+- [x] T017 [US1] Implement VNet, isolated AKS/runner/PostgreSQL/endpoint subnets and validated routing in infra/terraform/foundation/azure/; evidence: private subnet test and live foundation plan. VNet/subnets are provisioned; explicit AKS load-balancer and runner outbound-IP routes are implemented.
+- [x] T018 [US1] Implement delegated PostgreSQL subnet, private DNS links and required HA/storage egress in infra/terraform/modules/azure/network/; evidence: DNS/NSG configuration review.
+- [x] T019 [US1] Implement controlled AKS/runner egress and dependency allowlist in infra/terraform/modules/azure/network/; evidence: endpoints and ports documented.
+- [x] T020 [US1] Implement staging Basic ACR with authenticated public endpoint, disabled admin credentials and approved RBAC mode; preserve a private Premium option for production in infra/terraform/modules/azure/registry/; evidence: registry access tests.
+- [x] T021 [US1] Implement private AKS control plane, Entra integration and disabled local accounts where supported in infra/terraform/modules/azure/aks/; evidence: identity/DNS validation.
+- [x] T022 [US1] Implement a staging shared system pool and separate production system/user pools, supported zones, autoscale bounds and upgrade surge settings in infra/terraform/modules/azure/aks/; evidence: capacity and disruption review.
+- [x] T023 [US1] Implement OIDC/workload identity and kubelet registry reader assignments matched to registry mode in infra/terraform/modules/azure/aks/; evidence: scoped role matrix.
+- [x] T024 [US1] Implement PostgreSQL Flexible Server with accepted version/SKU, staging HA disabled and production HA configurable, backup/PITR and storage settings in infra/terraform/modules/azure/postgresql/; evidence: protected configuration tests.
+- [x] T025 [US1] Implement separate temporal/temporal_visibility databases and replacement/deletion safeguards in infra/terraform/modules/azure/postgresql/; evidence: nondestructive plans.
+- [x] T026 [US1] Implement private Key Vault, rotation/access controls and logical secret/certificate handoff in infra/terraform/modules/azure/security/; evidence: no secret-value outputs.
+- [x] T027 [US1] Implement minimal monitoring/log destinations, retention and diagnostics; no monetary spending cap by user instruction in infra/terraform/modules/azure/observability/; evidence: destination/owner matrix.
+- [x] T028 [US1] Implement independently bootstrappable ephemeral private runner infrastructure and short-lived registration in infra/terraform/modules/azure/runner/; evidence: no dependence on Temporal readiness, no persisted runner token; scripts/deployment/runner-jit.sh consumes one-job JIT configuration in temporary storage. Live GitHub registration remains deferred.
+- [x] T029 [US1] Compose module dependencies and safe environment examples in infra/terraform/environments/azure/; evidence: validated complete configuration.
+- [x] T030 [US1] Implement protected-state and identity handoff to separate platform root in infra/terraform/platform/; evidence: no same-plan Kubernetes bootstrap and no admin kubeconfig export.
+- [x] T031 [US1] Write resource ownership/import/teardown documentation including AKS-managed node resource group in docs/deployment/infrastructure.md; evidence: shared rg-nexusflow cannot be destroyed accidentally.
 
 ## Phase 4 — Source build implementation (US2)
 
-Owner: Build engineer / maintainer. Dependencies: Approved source policy; independent of cloud provisioning.
+Owner: Build engineer / maintainer. Dependencies: Approved source policy; independent of cloud provisioning. Evidence: [phase-4-implementation.md](phase-4-implementation.md). Implementation is complete; source candidate release acceptance is blocked by T093.
 
-- [ ] T032 [US2] Implement pinned-commit checkout and source metadata verification in scripts/deployment/build-source.sh; evidence: reject mutable-only or wrong-origin revisions.
-- [ ] T033 [US2] Reuse Makefile build flags/version metadata to compile Linux server and SQL tool in scripts/deployment/build-source.sh; evidence: source-built binary checksums and reported version.
-- [ ] T034 [US2] Implement minimal SQL-tools Dockerfile with matching PostgreSQL schemas in docker/targets/sql-tools.Dockerfile; evidence: no external CLI/application binary downloads.
-- [ ] T035 [US2] Adapt image assembly for fork provenance, UID 1000, architecture and approved base provenance in docker/targets/server.Dockerfile and deployment build configuration; evidence: runnable hardened images.
-- [ ] T036 [US2] Implement build-only pipeline supporting codex branches and PRs in .github/workflows/azure-temporal-validate.yml; evidence: no publish or Azure mutation on PR events.
-- [ ] T037 [US2] Generate SBOM, provenance, scan results and immutable release manifest in scripts/deployment/release-manifest.sh; evidence: schema/image/source consistency verification.
-- [ ] T038 [US2] Implement future explicit image-publish stage with OIDC and scoped registry write identity in .github/workflows/azure-temporal-release.yml; evidence: environment-gated publication only.
-- [ ] T039 [US2] Add build policy checks rejecting prebuilt Temporal images, CLI download path and latest deployment references in scripts/deployment/validate-release.sh; evidence: negative cases fail.
-- [ ] T040 [US2] Document local source builds, promotion by digest and vulnerability exception policy in docs/deployment/source-build.md; evidence: maintainer review.
+- [x] T032 [US2] Implement pinned-commit checkout and source metadata verification in scripts/deployment/build-source.sh; evidence: reject mutable-only or wrong-origin revisions.
+- [x] T033 [US2] Reuse Makefile build flags/version metadata to compile Linux server and SQL tool in scripts/deployment/build-source.sh; evidence: source-built binary checksums and reported version.
+- [x] T034 [US2] Implement minimal SQL-tools Dockerfile with matching PostgreSQL schemas in docker/targets/sql-tools.Dockerfile; evidence: no external CLI/application binary downloads.
+- [x] T035 [US2] Adapt image assembly for fork provenance, UID 1000, architecture and approved base provenance in docker/targets/deployment-server.Dockerfile and deployment build configuration; evidence: runnable hardened images.
+- [x] T036 [US2] Implement build-only pipeline supporting the authoritative codex branch and PRs targeting it in .github/workflows/azure-temporal-validate.yml; evidence: no publish or Azure mutation on PR events.
+- [x] T037 [US2] Generate SBOM, provenance, scan results and immutable release manifest in scripts/deployment/release-manifest.sh; evidence: schema/image/source consistency verification; generation/validation implementation tested, real SBOM/provenance/scans collected. This candidate has no accepted manifest because T093 findings intentionally block generation.
+- [x] T038 [US2] Implement future explicit image-publish stage with OIDC and scoped registry write identity in .github/workflows/azure-temporal-release.yml; evidence: environment-gated publication only.
+- [x] T039 [US2] Add build policy checks rejecting prebuilt Temporal images, CLI download path and latest deployment references in scripts/deployment/validate-release.sh; evidence: negative cases fail.
+- [x] T040 [US2] Document local source builds, promotion by digest and vulnerability exception policy in docs/deployment/source-build.md; evidence: maintainer review.
+
+- [ ] T093 [US2] Review and resolve six shared UNKNOWN-severity scan findings before release qualification: inspect advisory/symbol applicability, evaluate timezone/runtime-base and golang.org/x/net fixes, assess deprecated OpenPGP usage, record owner-reviewed conclusions without editing raw scans or blanket exclusions, implement narrowly bound reachability/VEX handling only where reviewed applicability evidence warrants it, select a reviewed immutable source/base candidate, rebuild and regenerate scans/SBOM/provenance, then require accepted manifest validation. Evidence: current findings in phase-4-implementation.md; future corrected evidence and T073/T080 gates. Any Go changes require relevant tests with test_dep and make lint-code-fast.
 
 ## Phase 5 — Safe database lifecycle implementation (US3)
 
@@ -126,11 +128,11 @@ Owner: Maintainer / platform owner. Dependencies: All applicable implementation/
 
 ## Phase 9 — Future execution only: infrastructure and release
 
-Owner: Authorized platform/database/build operators. Dependencies: Phase 8 authorization; NOT authorized by this request.
+Owner: Authorized platform/database/build operators. Dependencies: applicable implementation gates. Staging infrastructure provisioning is authorized by the later standing user instruction; source publication/schema/runtime operations remain separately recorded execution activities.
 
-- [ ] T077 [US1] EXECUTION ONLY: bootstrap state and OIDC prerequisites, protect/migrate initial state and verify locking using docs/deployment/bootstrap.md; evidence: protected backend and clean migration. Private account, endpoint and DNS provisioned; local state ACLs and encrypted backups added. Private runner access, migration and lease verification remain pending.
-- [ ] T078 [US1] EXECUTION ONLY: review and apply infrastructure plans for network, private registry, identities, runner, AKS, PostgreSQL and monitoring; evidence: outputs/ownership/plan audit without unexpected replacements. Network foundation applied: 7 additions, no changes/deletions. Remaining platform resources are pending.
-- [ ] T079 [US1] EXECUTION ONLY: verify private runner/operator routes, DNS, registry access and state/Key Vault access; evidence: allowed and denied connection tests.
+- [ ] T077 [US1] EXECUTION ONLY: bootstrap state and OIDC prerequisites, protect/migrate initial state and verify locking using docs/deployment/bootstrap.md; evidence: protected backend and clean migration. Private account, endpoint and DNS provisioned; local state ACLs and encrypted backups added. All four private backend states migrated and exclusive leases verified. GitHub OIDC federation remains intentionally disabled pending protected-environment/custom-claims verification; T077 remains partial for that prerequisite.
+- [x] T078 [US1] EXECUTION ONLY: review and apply infrastructure plans for network, private registry, identities, runner, AKS, PostgreSQL and monitoring; evidence: outputs/ownership/plan audit without unexpected replacements. Staging network, Basic ACR, private AKS, PostgreSQL, Vault and attended runner applied; monitoring ingestion defaults off for cost. Reviewed final infrastructure plan returned no changes; temporary NSG grant removed.
+- [ ] T079 [US1] EXECUTION ONLY: verify private runner/operator routes, DNS, registry access and state/Key Vault access; evidence: allowed and denied connection tests. Private DNS/TCP, AKS managed-identity authorization, Vault metadata, state access/lease contention and effective inbound/egress NSGs verified. Authenticated image pull remains pending source-image publication in Phase 4; T079 remains partial.
 - [ ] T080 [US2] EXECUTION ONLY: build/scan/sign or attest and publish approved source images to new ACR; evidence: release manifest and independently verified digests.
 - [ ] T081 [US3] EXECUTION ONLY: establish PostgreSQL roles, runtime/migration secrets and TLS material; evidence: least privilege and verified encrypted connections.
 - [ ] T082 [US3] EXECUTION ONLY: back up as applicable, acquire migration lease, run matching schema Jobs and verify both versions; evidence: nondestructive schema audit.
@@ -170,7 +172,7 @@ MVP staging sequence: US1 foundation -> US2 source artifacts -> US3 safe schema 
 | FR-006 | T009, T030, T061, T072 |
 | FR-007 | T004, T032–T035, T073 |
 | FR-008 | T005, T034, T039 |
-| FR-009 | T037, T039, T073, T080 |
+| FR-009 | T037, T039, T073, T080, T093 |
 | FR-010 | T014, T036, T038, T068 |
 | FR-011 | T008, T014, T023, T028, T068, T079 |
 | FR-012 | T024–T025, T043, T048, T050, T082 |

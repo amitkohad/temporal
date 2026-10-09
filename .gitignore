@@ -67,3 +67,4 @@ crash.*.log
 !*.tfvars.example
 !*.tfbackend.example
 .deployment-local/
+__pycache__/

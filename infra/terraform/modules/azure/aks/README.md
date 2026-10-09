@@ -1,0 +1,14 @@
+# Private Azure Kubernetes Service
+
+Provide `name`, `resource_group_name`, `node_resource_group_name` (a new Azure-managed node group), `location`, `tenant_id`, `environment` (`stg` or `prod`), a verified exact `kubernetes_version`, `subnet_id`, `service_cidr`, `pod_cidr`, `dns_service_ip`, `registry_id`, and `admin_object_ids`. Administrator principals can be Entra users or groups; Azure RBAC Cluster Admin and Cluster User permissions are assigned at cluster scope. No local credentials or kubeconfig are exported.
+
+Staging uses the Free control-plane tier and one Standard_D2s_v5 system node shared with Temporal. Production uses Standard, three zoned system nodes reserved for critical addons, and a separate zoned autoscaling user pool. Optional `system_vm_size`, `user_vm_size`, `production_zones` and `tags` customize verified capacity. Pass `system_node_count` from the environment contract; omission derives one for staging or the production system minimum. `capacity` exposes integer `system_min`/`system_max` (3/6) and `user_min`/`user_max` (3/12) bounds. Root environment contracts must enforce production registry and PostgreSQL safeguards.
+
+The module owns control-plane and kubelet user-assigned identities. Network Contributor is scoped to the parent VNet so AKS can link its system private DNS zone, Managed Identity Operator to the kubelet identity, and AcrPull to the registry. Azure creates system private DNS in the managed node resource group. The private API has no public FQDN. Azure CNI overlay and Cilium enforce pod policies. A Standard load balancer supplies explicit outbound connectivity; its IP is for egress, not Temporal ingress. This still incurs load-balancer and node-disk charges. No paid monitoring addon is enabled here.
+
+Outputs expose the resource ID, private FQDN, OIDC issuer, identity object IDs and node group. Managed cluster destruction is guarded; autoscaler node counts are ignored for drift. Cluster and node upgrades require the later drain and workload disruption safeguards before Temporal production use.
+
+Validate with Terraform init, validate and test in this directory. Tests mock Azure and perform no provisioning. Apply requires authority to assign scoped roles and a route to the private API for subsequent workloads.
+Private DNS linking requires VNet scope: see [Microsoft private cluster guidance](https://learn.microsoft.com/en-us/azure/aks/private-clusters). Azure owns the system DNS zone in the new managed node resource group. The provisioning operator must have role-assignment authority so Azure can establish the managed cluster permissions; this module does not grant the control plane Owner over rg-nexusflow.
+
+Terraform ignores system node-count drift to preserve production autoscaler state; runtime staging verification must check its expected count. Changing a count input on an existing cluster requires an explicit attended scale operation and subsequent verification.

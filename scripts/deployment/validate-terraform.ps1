@@ -25,7 +25,16 @@ try {
         'infra/terraform/modules/azure/resource-group',
         'infra/terraform/environments/azure',
         'infra/terraform/bootstrap/azure',
-        'infra/terraform/foundation/azure'
+        'infra/terraform/foundation/azure',
+        'infra/terraform/runner/azure',
+        'infra/terraform/platform',
+        'infra/terraform/modules/azure/registry',
+        'infra/terraform/modules/azure/aks',
+        'infra/terraform/modules/azure/postgresql',
+        'infra/terraform/modules/azure/security',
+        'infra/terraform/modules/azure/observability',
+        'infra/terraform/modules/azure/runner',
+        'infra/terraform/modules/azure/network'
     )
     foreach ($taskRoot in $taskRoots) {
         Invoke-TaskTerraform -Arguments @("-chdir=$taskRoot", 'init', '-backend=false', '-input=false', '-lockfile=readonly', '-no-color')

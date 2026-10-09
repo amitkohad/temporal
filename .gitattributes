@@ -1,2 +1,7 @@
 *.png filter=lfs diff=lfs merge=lfs -text
 *.jpg filter=lfs diff=lfs merge=lfs -text
+
+# Deployment scripts execute inside Linux containers.
+scripts/deployment/*.sh text eol=lf
+docker/targets/deployment-server.Dockerfile text eol=lf
+docker/targets/sql-tools.Dockerfile text eol=lf

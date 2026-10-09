@@ -32,6 +32,7 @@ resource "azurerm_subnet" "foundation" {
   virtual_network_name              = azurerm_virtual_network.foundation.name
   address_prefixes                  = [each.value]
   default_outbound_access_enabled   = false
+  service_endpoints                 = each.key == "postgres" ? ["Microsoft.Storage"] : []
   private_endpoint_network_policies = each.key == "private_endpoints" ? "Enabled" : "Disabled"
   dynamic "delegation" {
     for_each = each.key == "postgres" ? [1] : []

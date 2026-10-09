@@ -1,0 +1,208 @@
+name: Azure Temporal explicit image publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Full immutable fork source commit reachable from the deployment branch
+        type: string
+        required: true
+        default: 717f485c760d1068aa310906466468e51120254f
+
+permissions:
+  contents: read
+
+concurrency:
+  group: temporal-image-publication-staging
+  cancel-in-progress: false
+
+jobs:
+  candidate:
+    if: github.repository == 'amitkohad/temporal' && github.ref == 'refs/heads/codex/001-azure-temporal-deployment'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      RUNTIME_BASE: gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
+      TRIVY_VERSION: 0.75.0
+      RELEASE_BUILDER_ID: https://github.com/amitkohad/temporal/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Checkout immutable deployment driver
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: amitkohad/temporal
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate commit and explicit publication readiness
+        shell: bash
+        env:
+          PUBLISH_ENABLED: ${{ vars.AZURE_TEMPORAL_PUBLISH_ENABLED }}
+          OIDC_SUBJECT_VERIFIED: ${{ vars.AZURE_TEMPORAL_OIDC_SUBJECT_VERIFIED }}
+          REGISTRY_WRITER_CLIENT_ID: ${{ vars.AZURE_TEMPORAL_REGISTRY_WRITER_CLIENT_ID }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_REPOSITORY_ID" == 1411347811 ]]
+          [[ "$PUBLISH_ENABLED" == true && "$OIDC_SUBJECT_VERIFIED" == true ]]
+          [[ "$REGISTRY_WRITER_CLIENT_ID" =~ ^[0-9a-fA-F-]{36}$ ]]
+          git cat-file -e "$SOURCE_COMMIT^{commit}"
+          git merge-base --is-ancestor "$SOURCE_COMMIT" "$GITHUB_SHA"
+      - name: Install exact Go toolchain
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: 1.27.2
+          cache: false
+      - name: Build source and both local candidate images
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/deployment/build-source.sh "$SOURCE_COMMIT" "$RUNNER_TEMP/release/build"
+          bash scripts/deployment/build-images.sh "$RUNNER_TEMP/release/build" "$RUNTIME_BASE" "nexusflow/temporal-server:$SOURCE_COMMIT" "nexusflow/temporal-sql-tools:$SOURCE_COMMIT"
+      - name: Install checksum-verified scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/deployment/install-release-tools.sh "$RUNNER_TEMP/release-tools"
+          echo "$RUNNER_TEMP/release-tools" >> "$GITHUB_PATH"
+      - name: Collect SBOM, source provenance and vulnerability evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/deployment/collect-release-evidence.sh "$RUNNER_TEMP/release/build" "$RUNNER_TEMP/release/evidence"
+          bash scripts/deployment/release-manifest.sh "$RUNNER_TEMP/release/build" "$RUNNER_TEMP/release/evidence" "$RUNNER_TEMP/release/release.json"
+          bash scripts/deployment/validate-release.sh "$RUNNER_TEMP/release/release.json"
+          docker image save --output "$RUNNER_TEMP/release/candidate-images.tar" "nexusflow/temporal-server:$SOURCE_COMMIT" "nexusflow/temporal-sql-tools:$SOURCE_COMMIT"
+          sha256sum "$RUNNER_TEMP/release/candidate-images.tar" > "$RUNNER_TEMP/release/candidate-images.sha256"
+      - name: Transfer validated candidate bundle
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: temporal-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release/
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: candidate
+    if: github.repository == 'amitkohad/temporal' && github.ref == 'refs/heads/codex/001-azure-temporal-deployment' && vars.AZURE_TEMPORAL_PUBLISH_ENABLED == 'true' && vars.AZURE_TEMPORAL_OIDC_SUBJECT_VERIFIED == 'true'
+    environment: staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      ACR_NAME: acrnexusflowstgci7c5841
+    steps:
+      - name: Checkout immutable publication driver
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          repository: amitkohad/temporal
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Download only this run's validated candidate
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: temporal-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release/
+      - name: Verify candidate before obtaining Azure credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          cd "$RUNNER_TEMP/release"
+          expected=$(cut -d ' ' -f 1 candidate-images.sha256)
+          [[ "$expected" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$expected" candidate-images.tar | sha256sum --check --status
+          cd "$GITHUB_WORKSPACE"
+          bash scripts/deployment/validate-release.sh "$RUNNER_TEMP/release/release.json"
+          python3 - "$RUNNER_TEMP/release/release.json" "$SOURCE_COMMIT" "$RUNNER_TEMP/release/build/build-metadata.json" <<'PY'
+          import json, sys
+          manifest = json.load(open(sys.argv[1]))
+          if manifest['source']['commit'] != sys.argv[2]:
+              raise SystemExit('Candidate commit mismatch')
+          metadata = json.load(open(sys.argv[3]))
+          if metadata.get('build_driver', {}).get('dirty') is not False:
+              raise SystemExit('Publication requires a clean committed build driver before Azure login')
+          PY
+          docker image load --input "$RUNNER_TEMP/release/candidate-images.tar"
+          python3 - "$RUNNER_TEMP/release/release.json" <<'PY'
+          import json, subprocess, sys
+          manifest = json.load(open(sys.argv[1]))
+          for image in manifest['images'].values():
+              image_id = image['local_image_id']
+              actual = subprocess.check_output(['docker', 'image', 'inspect', '--format', '{{.Id}}', image_id], text=True).strip()
+              if actual != image_id:
+                  raise SystemExit('Loaded image ID mismatch before Azure login')
+          PY
+      - name: Azure OIDC login using registry writer identity
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_TEMPORAL_REGISTRY_WRITER_CLIENT_ID }}
+          tenant-id: 48d2ccb2-9e24-49cc-921b-89962ed5f85f
+          subscription-id: aa228172-c4ae-4c29-bd05-dcdcebb70ff4
+      - name: Publish the tested images and capture immutable pull references
+        shell: bash
+        run: |
+          set -euo pipefail
+          export DOCKER_CONFIG="$RUNNER_TEMP/temporal-docker-auth"
+          mkdir -m 700 "$DOCKER_CONFIG"
+          az acr login --name "$ACR_NAME" --only-show-errors
+          python3 - "$RUNNER_TEMP/release" "$SOURCE_COMMIT" "$ACR_NAME" <<'PY'
+          import json, pathlib, re, subprocess, sys
+          root, commit, registry = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3] + '.azurecr.io'
+          manifest = json.loads((root / 'release.json').read_text())
+          publication = {'source_commit': commit, 'images': {}}
+          for name, image in manifest['images'].items():
+              image_id = image['local_image_id']
+              actual = subprocess.check_output(['docker', 'image', 'inspect', '--format', '{{.Id}}', image_id], text=True).strip()
+              if actual != image_id:
+                  raise SystemExit('Loaded image ID mismatch')
+              repository = registry + '/nexusflow/temporal-' + name
+              tag = repository + ':' + commit + '-' + image_id[7:]
+              existing = subprocess.run(['docker', 'manifest', 'inspect', tag], text=True, capture_output=True)
+              if existing.returncode == 0:
+                  remote = json.loads(existing.stdout)
+                  if remote.get('config', {}).get('digest') != image_id:
+                      raise SystemExit('Existing candidate tag refers to different content; refusing overwrite')
+              else:
+                  if not re.search(r'no such manifest|manifest unknown|MANIFEST_UNKNOWN', existing.stderr, re.I):
+                      raise SystemExit('Registry preflight failed; refusing publication')
+                  subprocess.run(['docker', 'tag', image_id, tag], check=True)
+                  subprocess.run(['docker', 'push', tag], check=True)
+              subprocess.run(['docker', 'pull', '--platform', 'linux/amd64', tag], check=True)
+              references = json.loads(subprocess.check_output(['docker', 'image', 'inspect', tag], text=True))[0]['RepoDigests']
+              reference = next((ref for ref in references if re.fullmatch(re.escape(repository) + r'@sha256:[0-9a-f]{64}', ref)), None)
+              if reference is None:
+                  raise SystemExit('Registry pull digest missing')
+              remote = json.loads(subprocess.check_output(['docker', 'manifest', 'inspect', reference], text=True))
+              if remote.get('config', {}).get('digest') != image_id or 'manifests' in remote:
+                  raise SystemExit('Independent registry manifest verification failed')
+              publication['images'][name] = {'local_image_id': image_id, 'registry_reference': reference}
+          (root / 'publication.json').write_text(json.dumps(publication, indent=2) + '\n')
+          PY
+          bash scripts/deployment/release-manifest.sh "$RUNNER_TEMP/release/build" "$RUNNER_TEMP/release/evidence" "$RUNNER_TEMP/release/published-release.json" --published "$RUNNER_TEMP/release/publication.json"
+          bash scripts/deployment/validate-release.sh "$RUNNER_TEMP/release/published-release.json" --require-published
+      - name: Remove ephemeral registry credentials
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          auth="$RUNNER_TEMP/temporal-docker-auth"
+          if [[ -d "$auth" ]]; then
+            DOCKER_CONFIG="$auth" docker logout "$ACR_NAME.azurecr.io" || true
+            rm -rf -- "$auth"
+          fi
+      - name: Preserve immutable publication evidence
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: temporal-published-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/release/published-release.json
+            ${{ runner.temp }}/release/publication.json
+            ${{ runner.temp }}/release/evidence/
+            ${{ runner.temp }}/release/build/
+          if-no-files-found: error
+          retention-days: 7

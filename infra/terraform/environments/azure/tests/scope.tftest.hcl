@@ -71,3 +71,29 @@ run "private_registry_cannot_use_basic" {
   }
   expect_failures = [var.registry_sku]
 }
+run "resolved_staging_composition" {
+  command = plan
+  variables {
+    provision_platform = true
+    environment        = merge(run.reference_shared_group.environment_contract, { kubernetes_version = "1.35.8" })
+    platform = {
+      vnet_id = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Network/virtualNetworks/vnet-nexusflow-stg-ci"
+      subnet_ids = {
+        nodes             = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Network/virtualNetworks/vnet-nexusflow-stg-ci/subnets/snet-nodes"
+        postgres          = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Network/virtualNetworks/vnet-nexusflow-stg-ci/subnets/snet-postgres"
+        runner            = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Network/virtualNetworks/vnet-nexusflow-stg-ci/subnets/snet-runner"
+        private_endpoints = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Network/virtualNetworks/vnet-nexusflow-stg-ci/subnets/snet-private-endpoints"
+      }
+      registry_name            = "acrnexusflowstgci7c5841"
+      aks_name                 = "aks-nexusflow-stg-ci"
+      node_resource_group_name = "rg-nexusflow-aks-stg-ci-nodes"
+      postgres_name            = "psql-nexusflow-stg-ci-7c5841"
+      key_vault_name           = "kv-nxf-stg-ci-7c5841"
+      operator                 = { object_id = "11111111-1111-1111-1111-111111111111", principal_name = "operator@example.test" }
+    }
+  }
+  assert {
+    condition     = !output.platform_references.stg.registry.private_access && output.platform_references.stg.persistence.authentication == "EntraOnly" && output.platform_references.stg.observability.workspace_id == null
+    error_message = "Staging composition must preserve approved registry access, credential-free provisioning and minimal paid monitoring."
+  }
+}

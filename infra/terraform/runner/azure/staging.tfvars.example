@@ -1,0 +1,14 @@
+subscription_id = "aa228172-c4ae-4c29-bd05-dcdcebb70ff4"
+tenant_id = "48d2ccb2-9e24-49cc-921b-89962ed5f85f"
+location = "centralindia"
+enabled = false
+subnet_id = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Network/virtualNetworks/vnet-nexusflow-stg-ci/subnets/snet-runner"
+ssh_public_key = ""
+vm_size = "Standard_B1ms"
+# Resolve a specific Canonical image version with Azure CLI before enabling.
+image_version = "latest"
+state_container_ids = {
+  bootstrap = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Storage/storageAccounts/stnexusflowtf7c5841/blobServices/default/containers/bootstrap"
+  infrastructure = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Storage/storageAccounts/stnexusflowtf7c5841/blobServices/default/containers/infrastructure"
+  platform = "/subscriptions/aa228172-c4ae-4c29-bd05-dcdcebb70ff4/resourceGroups/rg-nexusflow/providers/Microsoft.Storage/storageAccounts/stnexusflowtf7c5841/blobServices/default/containers/platform"
+}

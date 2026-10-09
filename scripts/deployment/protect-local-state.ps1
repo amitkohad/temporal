@@ -11,14 +11,16 @@ New-Item -ItemType Directory -Force $taskBackupRoot | Out-Null
 $taskIdentity = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 & icacls $taskBackupRoot /inheritance:r /grant:r "${taskIdentity}:(OI)(CI)F" 'SYSTEM:(OI)(CI)F' | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Cannot restrict backup access.' }
-foreach ($taskRoot in @('foundation', 'bootstrap')) {
+foreach ($taskRoot in @('foundation', 'bootstrap', 'runner', 'environments')) {
     $taskRootPath = Join-Path $taskRepoRoot "infra/terraform/$taskRoot/azure"
     $taskStatePath = Join-Path $taskRootPath 'terraform.tfstate'
-    if (-not (Test-Path -LiteralPath $taskStatePath)) { throw "State missing for $taskRoot." }
+    if (-not (Test-Path -LiteralPath $taskStatePath)) {
+        if (Test-Path -LiteralPath ($taskStatePath+'.migrated')) { $taskStatePath += '.migrated' } else { continue }
+    }
     $taskStateBytes = [IO.File]::ReadAllBytes($taskStatePath)
     $taskEncrypted = [Security.Cryptography.ProtectedData]::Protect($taskStateBytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)
     [IO.File]::WriteAllBytes((Join-Path $taskBackupRoot "$taskRoot-$(Get-Date -Format yyyyMMddTHHmmssfff).dpapi"), $taskEncrypted)
-    foreach ($taskFile in Get-ChildItem -LiteralPath $taskRootPath -File | Where-Object { $_.Name -like '*.tfstate*' -or $_.Name -like '*.tfplan' -or $_.Name -like '*.tfvars' }) {
+    foreach ($taskFile in Get-ChildItem -LiteralPath $taskRootPath -File | Where-Object { $_.Name -like '*.tfstate*' -or $_.Name -like '*.tfplan' -or $_.Name -like '*.tfvars*' }) {
         & icacls $taskFile.FullName /inheritance:r /grant:r "${taskIdentity}:F" 'SYSTEM:F' | Out-Null
         if ($LASTEXITCODE -ne 0) { throw "Cannot restrict access to $($taskFile.Name)." }
     }
